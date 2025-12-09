@@ -41,14 +41,23 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
   const fetchWaliKelasClassList = useCallback(async () => {
     try {
       if (!userId || !activeTASemester) return;
+      setLoading(true);
       const classes = await guruApi.getWaliKelasClassList(userId, activeTASemester.id_ta_semester);
       setClassList(classes);
+      
+      if (classes.length === 0) {
+        // Guru bukan wali kelas
+        setLoading(false);
+        return;
+      }
       
       if (classes.length > 0 && !selectedClass) {
         setSelectedClass(classes[0].id_kelas);
       }
     } catch (err) {
       console.error('Error fetching wali kelas class list:', err);
+      setError('Gagal memuat data wali kelas. Silakan coba lagi.');
+      setLoading(false);
     }
   }, [userId, activeTASemester, selectedClass]);
 
@@ -223,23 +232,9 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
       rata_rata: data.count > 0 ? parseFloat((data.total_nilai / data.count).toFixed(2)) : 0,
     })).sort((a, b) => a.nama_mapel.localeCompare(b.nama_mapel));
 
-    const allowedSet = new Set(ALLOWED_MAPEL_WALI.map(normalizeName));
-
-    const filteredGradesPerSubjectTable = new Map();
-    finalGradesPerSubjectTable.forEach((value, key) => {
-      if (allowedSet.has(normalizeName(key))) {
-        filteredGradesPerSubjectTable.set(key, value);
-      }
-    });
-
-    const filteredUniqueTipeNilaiPerMapel = new Map();
-    uniqueTipeNilaiPerMapel.forEach((set, key) => {
-      if (allowedSet.has(normalizeName(key))) {
-        filteredUniqueTipeNilaiPerMapel.set(key, set);
-      }
-    });
-
-    gradesBySubjectChart = gradesBySubjectChart.filter(item => allowedSet.has(normalizeName(item.nama_mapel)));
+    // Wali kelas bisa lihat semua mata pelajaran yang diajar di kelasnya
+    const filteredGradesPerSubjectTable = finalGradesPerSubjectTable;
+    const filteredUniqueTipeNilaiPerMapel = uniqueTipeNilaiPerMapel;
 
     setProcessedData({
       gradesPerSubjectTable: filteredGradesPerSubjectTable,
@@ -298,7 +293,8 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
 
   if (loading) return <LoadingSpinner message="Memuat dashboard wali kelas..." />;
   if (error) return <StatusMessage type="error" message={error} />;
-  if (!classInfo) return <StatusMessage type="info" message="Anda bukan wali kelas untuk Tahun Ajaran & Semester aktif ini." />;
+  if (classList.length === 0) return <StatusMessage type="info" message="Anda bukan wali kelas untuk tahun ajaran dan semester aktif ini." />;
+  if (!classInfo) return <StatusMessage type="info" message="Silakan pilih kelas atau tunggu data dimuat." />;
 
   const allSubjectNames = Array.from(processedData.gradesPerSubjectTable.keys()).sort();
 
