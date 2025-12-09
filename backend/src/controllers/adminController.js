@@ -11,43 +11,27 @@ function hashPasswordPythonStyle(password) {
 // --- Manajemen Siswa ---
 exports.getAllStudents = (req, res) => {
     const db = getDb();
-    const activeTASemesterId = req.query.active_ta_semester_id;
 
+    // Simple query: just get all students
+    // Do NOT join with SiswaKelas here - that's for enrollment lookup
     let query = `
-        SELECT
+        SELECT DISTINCT
             s.id_siswa,
             s.nama_siswa,
             s.tanggal_lahir,
             s.jenis_kelamin,
-            s.tahun_ajaran_masuk,
-            k.id_kelas AS kelas_aktif_id,
-            k.nama_kelas AS kelas_aktif_nama,
-            tas_k.tahun_ajaran AS kelas_aktif_tahun_ajaran,
-            tas_k.semester AS kelas_aktif_semester
+            s.tahun_ajaran_masuk
         FROM Siswa s
-        LEFT JOIN SiswaKelas sk ON s.id_siswa = sk.id_siswa
-        LEFT JOIN Kelas k ON sk.id_kelas = k.id_kelas
-        LEFT JOIN TahunAjaranSemester tas_k ON k.id_ta_semester = tas_k.id_ta_semester
+        ORDER BY s.nama_siswa
     `;
-    const params = [];
 
-    if (activeTASemesterId) {
-        query += ` WHERE sk.id_ta_semester = ? OR sk.id_ta_semester IS NULL`;
-        params.push(activeTASemesterId);
-    } else {
-        query += ` LEFT JOIN TahunAjaranSemester tas_active ON tas_active.is_aktif = 1
-                   WHERE sk.id_ta_semester = tas_active.id_ta_semester OR sk.id_ta_semester IS NULL`;
-    }
-
-    query += ` ORDER BY s.nama_siswa`;
-
-    db.all(query, params, (err, rows) => {
+    db.all(query, [], (err, rows) => {
         if (err) {
             console.error("Error fetching all students:", err.message);
             return res.status(500).json({ message: err.message });
         }
-        // Jangan expose password_hash ke frontend
         res.json(rows);
+    });
     });
 };
 
