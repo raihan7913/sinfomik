@@ -107,6 +107,17 @@ const StudentClassEnroll = ({ activeTASemester }) => {
     fetchAllStudentsInSemester(activeTASemester?.id_ta_semester);
   }, [selectedKelasId, activeTASemester, kelas]);
 
+  // Auto-refresh data ketika tab/window di-focus kembali
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused, refreshing data');
+      fetchData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const showMessage = (text, type = 'success') => {
     setMessage(text);
     setMessageType(type);
