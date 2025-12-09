@@ -69,6 +69,13 @@ export const setActiveTASemester = async (id_ta_semester) => {
   });
 };
 
+export const deleteTASemester = async (id_ta_semester) => {
+  return fetchData(`${API_BASE_URL}/api/admin/ta-semester/${id_ta_semester}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
 // --- API untuk Siswa ---
 export const getStudents = async () => {
   return fetchData(`${API_BASE_URL}/api/admin/students`);

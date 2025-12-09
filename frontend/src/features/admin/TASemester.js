@@ -105,6 +105,36 @@ const TASemesterManagement = ({ activeTASemester, setActiveTASemester }) => {
     });
   };
 
+  const handleDeleteTASemester = async (id) => {
+    const selectedTA = taSemesters.find(ta => ta.id_ta_semester === id);
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Hapus Tahun Ajaran & Semester',
+      message: `Apakah Anda yakin akan menghapus tahun ajaran terkait? Semua data yang berhubungan dengan tahun ajaran tersebut akan di hapus secara permanen.\n\n"${selectedTA.tahun_ajaran} - ${selectedTA.semester}"`,
+      variant: 'danger',
+      onConfirm: async () => {
+        setMessage('');
+        setMessageType('');
+        try {
+          const response = await adminApi.deleteTASemester(id);
+          setMessage(response.message);
+          setMessageType('success');
+          fetchTASemesters(); // Refresh daftar
+          
+          // Hide message after 5 seconds
+          setTimeout(() => {
+            setMessage('');
+            setMessageType('');
+          }, 5000);
+        } catch (err) {
+          setMessage(err.message);
+          setMessageType('error');
+        }
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+      }
+    });
+  };
+
   // Tidak perlu columns, kita akan render tabel manual untuk kontrol lebih baik
 
   return (
@@ -214,14 +244,24 @@ const TASemesterManagement = ({ activeTASemester, setActiveTASemester }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {!row.is_aktif && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          icon="check-circle"
-                          onClick={() => handleSetActive(row.id_ta_semester)}
-                        >
-                          Set Aktif
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon="check-circle"
+                            onClick={() => handleSetActive(row.id_ta_semester)}
+                          >
+                            Set Aktif
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon="trash-alt"
+                            onClick={() => handleDeleteTASemester(row.id_ta_semester)}
+                          >
+                            Hapus
+                          </Button>
+                        </div>
                       )}
                     </td>
                   </tr>

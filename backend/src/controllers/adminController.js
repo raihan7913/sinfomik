@@ -258,8 +258,8 @@ exports.addTASemester = (req, res) => {
             
             const id_ta_semester = this.lastID;
             
-            // Auto-create default kelas untuk semester Ganjil
-            if (semester === 'Ganjil') {
+            // Auto-create default kelas untuk semester Ganjil dan Genap
+            if (semester === 'Ganjil' || semester === 'Genap') {
                 let kelasCreated = 0;
                 let kelasError = null;
                 
@@ -313,6 +313,55 @@ exports.setActiveTASemester = (req, res) => {
                 if (err) return res.status(500).json({ message: err.message });
                 if (this.changes === 0) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
                 res.json({ message: 'Tahun Ajaran & Semester berhasil diatur sebagai aktif.' });
+            });
+        });
+    });
+};
+
+exports.deleteTASemester = (req, res) => {
+    const { id } = req.params;
+    const db = getDb();
+    
+    db.serialize(() => {
+        // Cek apakah TASemester aktif
+        db.get("SELECT is_aktif FROM TahunAjaranSemester WHERE id_ta_semester = ?", [id], (err, row) => {
+            if (err) return res.status(500).json({ message: err.message });
+            if (!row) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
+            
+            if (row.is_aktif) {
+                return res.status(409).json({ message: 'Tidak dapat menghapus Tahun Ajaran yang sedang aktif. Silakan set semester lain sebagai aktif terlebih dahulu.' });
+            }
+            
+            // Delete semua data yang berhubungan (cascade)
+            // 1. Delete Nilai (grades)
+            db.run(`
+                DELETE FROM Nilai WHERE id_penugasan IN (
+                    SELECT id_penugasan FROM GuruMataPelajaranKelas WHERE id_ta_semester = ?
+                )
+            `, [id], (err) => {
+                if (err) return res.status(500).json({ message: err.message });
+                
+                // 2. Delete GuruMataPelajaranKelas (teacher assignments)
+                db.run("DELETE FROM GuruMataPelajaranKelas WHERE id_ta_semester = ?", [id], (err) => {
+                    if (err) return res.status(500).json({ message: err.message });
+                    
+                    // 3. Delete SiswaKelas (student class enrollments)
+                    db.run("DELETE FROM SiswaKelas WHERE id_ta_semester = ?", [id], (err) => {
+                        if (err) return res.status(500).json({ message: err.message });
+                        
+                        // 4. Delete Kelas (classes)
+                        db.run("DELETE FROM Kelas WHERE id_ta_semester = ?", [id], (err) => {
+                            if (err) return res.status(500).json({ message: err.message });
+                            
+                            // 5. Delete TahunAjaranSemester
+                            db.run("DELETE FROM TahunAjaranSemester WHERE id_ta_semester = ?", [id], function(err) {
+                                if (err) return res.status(500).json({ message: err.message });
+                                if (this.changes === 0) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
+                                res.json({ message: 'Tahun Ajaran & Semester dan semua data terkait berhasil dihapus.' });
+                            });
+                        });
+                    });
+                });
             });
         });
     });

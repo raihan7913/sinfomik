@@ -17,6 +17,7 @@ router.delete('/students/:id', adminController.deleteStudent); // Endpoint DELET
 router.get('/ta-semester', adminController.getAllTASemester);
 router.post('/ta-semester', adminController.addTASemester);
 router.put('/ta-semester/set-active/:id', adminController.setActiveTASemester);
+router.delete('/ta-semester/:id', adminController.deleteTASemester);
 
 router.get('/kelas', adminController.getAllKelas); // Bisa filter by id_ta_semester
 router.post('/kelas', adminController.addKelas);

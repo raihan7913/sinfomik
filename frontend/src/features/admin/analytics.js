@@ -935,16 +935,17 @@ const AdminAnalytics = () => {
                                                 <i className="fas fa-chart-line text-purple-500 mr-2"></i>
                                                 Grafik Perkembangan Nilai
                                             </h3>
-                                            {selectedMapelStudent && selectedMapelStudent !== 'all' && (
+                                            {studentData.data && studentData.data.length > 0 && (
                                                 <button
                                                     onClick={() => {
-                                                        const mapelName = mataPelajaranList.find(m => m.id === parseInt(selectedMapelStudent))?.nama || 'Mata Pelajaran';
-                                                        const filteredData = studentData.data.filter(it => parseInt(it.id_mapel) === parseInt(selectedMapelStudent));
+                                                        const mapelName = selectedMapelStudent && selectedMapelStudent !== 'all' 
+                                                            ? mataPelajaranList.find(m => m.id === parseInt(selectedMapelStudent))?.nama || 'Mata Pelajaran'
+                                                            : 'Semua Mapel';
                                                         exportChartToPDF(
                                                             studentChartRef,
                                                             `laporan_${studentData.student.nama_siswa}_${mapelName}`,
-                                                            `Laporan Nilai - ${mapelName}`,
-                                                            filteredData,
+                                                            `Laporan Nilai ${mapelName} - ${studentData.student.nama_siswa}`,
+                                                            studentData.data,
                                                             'student',
                                                             { id: studentData.student.id_siswa, nama: studentData.student.nama_siswa }
                                                         );
