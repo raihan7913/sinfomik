@@ -160,7 +160,7 @@ const StudentManagement = () => {
     nama_siswa: '',
     tanggal_lahir: '',
     jenis_kelamin: 'L',
-    tahun_ajaran_masuk: new Date().getFullYear().toString()
+    tahun_ajaran_masuk: (new Date().getFullYear() - 1).toString()
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
@@ -216,7 +216,7 @@ const StudentManagement = () => {
         nama_siswa: '',
         tanggal_lahir: '',
         jenis_kelamin: 'L',
-        tahun_ajaran_masuk: new Date().getFullYear().toString()
+        tahun_ajaran_masuk: (new Date().getFullYear() - 1).toString()
       });
       fetchStudents(); // Refresh daftar
     } catch (err) {
@@ -400,8 +400,11 @@ const StudentManagement = () => {
                 required
                 placeholder="Contoh: 2023"
                 min={2020}
-                max={new Date().getFullYear()}
+                max={new Date().getFullYear() - 1}
               />
+              <small className="text-gray-500 mt-1 block">
+                Siswa harus masuk pada tahun ajaran sebelumnya atau lebih awal untuk bisa terdaftar di semester aktif
+              </small>
             </div>
             <div className="md:col-span-2">
               <Button

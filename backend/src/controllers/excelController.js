@@ -717,6 +717,7 @@ exports.importStudents = async (req, res) => {
             
             // Validate jenis kelamin
             const validJK = jenisKelamin === 'L' || jenisKelamin === 'P' ? jenisKelamin : 'L';
+            const tahunAjaranMasuk = new Date().getFullYear() - 1; // Default: tahun sebelumnya
             
             try {
                 await new Promise((resolve, reject) => {
@@ -733,7 +734,7 @@ exports.importStudents = async (req, res) => {
                             db.run(
                                 `INSERT INTO Siswa (id_siswa, nama_siswa, tanggal_lahir, jenis_kelamin, tahun_ajaran_masuk)
                                  VALUES (?, ?, ?, ?, ?)`,
-                                [nisn, nama, tglLahir, validJK, null],
+                                [nisn, nama, tglLahir, validJK, tahunAjaranMasuk],
                                 function(err) {
                                     if (err) {
                                         results.failed++;

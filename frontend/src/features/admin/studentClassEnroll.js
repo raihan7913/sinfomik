@@ -36,18 +36,8 @@ const StudentClassEnroll = ({ activeTASemester }) => {
         activeTASemester ? adminApi.getKelas(activeTASemester.id_ta_semester) : Promise.resolve([])
       ]);
       
-      // Filter siswa yang tahun masuknya <= tahun ajaran semester aktif
-      let validStudents = studentsData;
-      if (activeTASemester) {
-        validStudents = studentsData.filter(s => {
-          const tahunMasuk = parseInt(s.tahun_ajaran_masuk);
-          const tahunAjaran = parseInt(activeTASemester.tahun_ajaran);
-          return tahunMasuk <= tahunAjaran;
-        });
-        console.log(`Filtered students: ${validStudents.length} dari ${studentsData.length} (TA ${activeTASemester.tahun_ajaran})`);
-      }
-      
-      setStudents(validStudents);
+      // Semua siswa yang ada di database bisa di-assign
+      setStudents(studentsData);
       setKelas(kelasData);
       if (kelasData.length > 0 && !selectedKelasId) {
         setSelectedKelasId(kelasData[0].id_kelas);
