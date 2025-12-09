@@ -118,9 +118,11 @@ exports.addTeacher = (req, res) => {
     }
     
     const password_hash = hashPasswordPythonStyle(password);
+    // Convert empty email to NULL for proper UNIQUE constraint handling
+    const emailValue = email && email.trim() ? email.trim() : null;
 
     db.run("INSERT INTO Guru (id_guru, username, password_hash, nama_guru, email) VALUES (?, ?, ?, ?, ?)",
-        [id_guru, username, password_hash, nama_guru, email],
+        [id_guru, username, password_hash, nama_guru, emailValue],
         function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
@@ -140,13 +142,16 @@ exports.updateTeacher = (req, res) => {
     const { id } = req.params;
     const { username, password, nama_guru, email } = req.body;
     const db = getDb();
+    // Convert empty email to NULL for proper UNIQUE constraint handling
+    const emailValue = email && email.trim() ? email.trim() : null;
+    
     let query = "UPDATE Guru SET username = ?, nama_guru = ?, email = ? WHERE id_guru = ?";
-    let params = [username, nama_guru, email, id];
+    let params = [username, nama_guru, emailValue, id];
 
     if (password) {
         const password_hash = hashPasswordPythonStyle(password);
         query = "UPDATE Guru SET username = ?, nama_guru = ?, email = ?, password_hash = ? WHERE id_guru = ?";
-        params = [username, nama_guru, email, password_hash, id];
+        params = [username, nama_guru, emailValue, password_hash, id];
     }
 
     db.run(query, params, function(err) {

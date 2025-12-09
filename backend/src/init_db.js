@@ -295,7 +295,7 @@ async function insertDummyData(db) {
         if (kelasCount === 0) {
             const allTeachers = await allQuery("SELECT id_guru FROM Guru");
             const kelasData = [];
-            const kelasNames = ['X A', 'XI IPA 1'];
+            const kelasNames = ['1 Darhadeh', '1 Gumujeng'];
 
             for (const tas of allTASemesters) {
                 if (allTeachers.length > 0) {

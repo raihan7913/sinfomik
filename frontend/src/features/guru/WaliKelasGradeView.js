@@ -363,13 +363,6 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
           >
             Nilai Detail
           </Button>
-          <Button
-            variant={activeView === 'analytics' ? 'primary' : 'ghost'}
-            icon="chart-bar"
-            onClick={() => setActiveView('analytics')}
-          >
-            Statistik & Grafik
-          </Button>
         </div>
       </div>
 
@@ -470,41 +463,50 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 border rounded-lg bg-gray-50">
-              <h4 className="font-semibold text-gray-700 mb-3">Distribusi Nilai Kelas</h4>
-              <ResponsiveContainer width="100%" height={250}>
+          {/* Grafik Section - Stacked Vertically */}
+          <div className="space-y-6">
+            <div className="p-4 border rounded-lg bg-white shadow">
+              <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                <i className="fas fa-chart-bar mr-2 text-indigo-600"></i>
+                Rata-rata per Mata Pelajaran
+              </h4>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={processedData.gradesBySubjectChart}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 250, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} />
+                  <YAxis dataKey="nama_mapel" type="category" width={240} />
+                  <Tooltip />
+                  <Bar dataKey="rata_rata" fill="#00C49F" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="p-4 border rounded-lg bg-white shadow">
+              <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                <i className="fas fa-chart-pie mr-2 text-indigo-600"></i>
+                Distribusi Nilai Kelas
+              </h4>
+              <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <Pie
                     data={processedData.gradeDistributionChart}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
+                    outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
-                    nameKey="name"
-                    label={({ name, percentage }) => `${name} (${percentage.toFixed(0)}%)`}
                   >
                     {processedData.gradeDistributionChart.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value} siswa`, '']} />
+                  <Tooltip formatter={(value) => `${value} siswa`} />
+                  <Legend />
                 </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="p-4 border rounded-lg bg-gray-50">
-              <h4 className="font-semibold text-gray-700 mb-3">Rata-rata per Mata Pelajaran</h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={processedData.gradesBySubjectChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="nama_mapel" angle={-15} textAnchor="end" height={60} />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Bar dataKey="rata_rata" fill="#00C49F" />
-                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -678,67 +680,6 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      )}
-
-      {activeView === 'analytics' && (
-        <div className="space-y-6">
-          <h3 className="text-xl font-semibold text-gray-800">Statistik & Analisis Kelas</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 bg-white border rounded-lg shadow">
-              <h4 className="font-semibold text-gray-700 mb-4">Rata-rata Nilai per Siswa</h4>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={processedData.gradesByStudentChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="nama_siswa" angle={-30} textAnchor="end" height={80} />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="rata_rata" fill="#0088FE" name="Rata-rata Nilai" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="p-4 bg-white border rounded-lg shadow">
-              <h4 className="font-semibold text-gray-700 mb-4">Rata-rata per Mata Pelajaran</h4>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={processedData.gradesBySubjectChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="nama_mapel" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="rata_rata" fill="#00C49F" name="Rata-rata Nilai" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="p-4 bg-white border rounded-lg shadow">
-            <h4 className="font-semibold text-gray-700 mb-4">Distribusi Nilai Kelas</h4>
-            <ResponsiveContainer width="100%" height={350}>
-              <PieChart>
-                <Pie
-                  data={processedData.gradeDistributionChart}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="value"
-                  nameKey="name"
-                  label={({ name, percentage }) => `${name} (${percentage.toFixed(0)}%)`}
-                >
-                  {processedData.gradeDistributionChart.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value} siswa`, '']} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
           </div>
         </div>
       )}

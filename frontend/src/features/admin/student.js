@@ -155,12 +155,13 @@ const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTASemester, setActiveTASemester] = useState(null);
   const [newStudent, setNewStudent] = useState({
     id_siswa: '',
     nama_siswa: '',
     tanggal_lahir: '',
     jenis_kelamin: 'L',
-    tahun_ajaran_masuk: (new Date().getFullYear() - 1).toString()
+    tahun_ajaran_masuk: ''
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
@@ -182,8 +183,26 @@ const StudentManagement = () => {
     }
   };
 
+  const fetchActiveTASemester = async () => {
+    try {
+      const taSemesters = await adminApi.getTASemester();
+      const active = taSemesters.find(ta => ta.is_aktif);
+      if (active) {
+        setActiveTASemester(active);
+        // Auto-fill tahun_ajaran_masuk with active TA semester
+        setNewStudent(prev => ({
+          ...prev,
+          tahun_ajaran_masuk: active.tahun_ajaran
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching active TA semester:', err);
+    }
+  };
+
   useEffect(() => {
     fetchStudents();
+    fetchActiveTASemester();
   }, []);
 
   const showMessage = (text, type = 'success') => {
@@ -216,7 +235,7 @@ const StudentManagement = () => {
         nama_siswa: '',
         tanggal_lahir: '',
         jenis_kelamin: 'L',
-        tahun_ajaran_masuk: (new Date().getFullYear() - 1).toString()
+        tahun_ajaran_masuk: activeTASemester?.tahun_ajaran || ''
       });
       fetchStudents(); // Refresh daftar
     } catch (err) {
@@ -394,16 +413,16 @@ const StudentManagement = () => {
                 Tahun Ajaran Masuk
               </label>
               <input 
-                type="number" 
+                type="text" 
                 value={newStudent.tahun_ajaran_masuk}
-                onChange={(e) => setNewStudent({ ...newStudent, tahun_ajaran_masuk: e.target.value })}
-                required
-                placeholder="Contoh: 2023"
-                min={2020}
-                max={new Date().getFullYear() - 1}
+                disabled
+                placeholder="Otomatis dari tahun ajaran aktif"
+                className="bg-gray-100 cursor-not-allowed"
               />
               <small className="text-gray-500 mt-1 block">
-                Siswa harus masuk pada tahun ajaran sebelumnya atau lebih awal untuk bisa terdaftar di semester aktif
+                {activeTASemester 
+                  ? `Otomatis menggunakan tahun ajaran aktif: ${activeTASemester.tahun_ajaran} - ${activeTASemester.semester}`
+                  : 'Memuat tahun ajaran aktif...'}
               </small>
             </div>
             <div className="md:col-span-2">

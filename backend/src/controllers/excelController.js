@@ -689,6 +689,23 @@ exports.importStudents = async (req, res) => {
         }
         
         const db = getDb();
+        
+        // Get active TA semester
+        let activeTASemesterTahun = '';
+        const activeTASemester = await new Promise((resolve) => {
+            db.get('SELECT tahun_ajaran FROM TahunAjaranSemester WHERE is_aktif = 1', [], (err, row) => {
+                if (!err && row) {
+                    activeTASemesterTahun = row.tahun_ajaran;
+                }
+                resolve(row);
+            });
+        });
+        
+        // Fallback to current year if no active semester found
+        if (!activeTASemesterTahun) {
+            activeTASemesterTahun = `${new Date().getFullYear() - 1}/${new Date().getFullYear()}`;
+        }
+        
         const results = {
             success: 0,
             skipped: 0,
@@ -717,7 +734,7 @@ exports.importStudents = async (req, res) => {
             
             // Validate jenis kelamin
             const validJK = jenisKelamin === 'L' || jenisKelamin === 'P' ? jenisKelamin : 'L';
-            const tahunAjaranMasuk = new Date().getFullYear() - 1; // Default: tahun sebelumnya
+            const tahunAjaranMasuk = activeTASemesterTahun; // Use active TA semester
             
             try {
                 await new Promise((resolve, reject) => {
