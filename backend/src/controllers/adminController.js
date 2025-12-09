@@ -299,7 +299,19 @@ exports.addKelas = (req, res) => {
                 }
                 return res.status(400).json({ message: err.message });
             }
-            res.status(201).json({ message: 'Kelas berhasil ditambahkan.', id: this.lastID });
+            
+            // If a homeroom teacher is assigned, auto-assign 5 core subjects
+            if (id_wali_kelas) {
+                autoAssignCoreSubjects(db, id_wali_kelas, this.lastID, (assignErr) => {
+                    if (assignErr) {
+                        console.error('Error auto-assigning core subjects:', assignErr);
+                        // Don't fail the main operation, just log the error
+                    }
+                    res.status(201).json({ message: 'Kelas berhasil ditambahkan. Mata pelajaran wajib telah ditugaskan ke wali kelas.', id: this.lastID });
+                });
+            } else {
+                res.status(201).json({ message: 'Kelas berhasil ditambahkan.', id: this.lastID });
+            }
         }
     );
 };

@@ -193,7 +193,7 @@ const KelasManagement = ({ activeTASemester }) => {
       return;
     }
 
-    const waliKelasId = selectedWaliKelas ? teachers.find(t => t.nama_guru === selectedWaliKelas)?.id_guru : null;
+    const waliKelasId = selectedWaliKelas ? parseInt(selectedWaliKelas) : null;
 
     try {
       const response = await adminApi.addKelas({
@@ -339,7 +339,7 @@ const KelasManagement = ({ activeTASemester }) => {
             >
               <option value="">Pilih Wali Kelas</option>
               {teachers.map(teacher => (
-                <option key={teacher.id_guru} value={teacher.nama_guru}>
+                <option key={teacher.id_guru} value={teacher.id_guru}>
                   {teacher.nama_guru}
                 </option>
               ))}
