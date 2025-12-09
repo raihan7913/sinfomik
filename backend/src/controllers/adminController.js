@@ -109,20 +109,29 @@ exports.getAllTeachers = (req, res) => {
 };
 
 exports.addTeacher = (req, res) => {
-    const { username, password, nama_guru, email } = req.body;
+    const { id_guru, username, password, nama_guru, email } = req.body;
     const db = getDb();
+    
+    // Validate id_guru is provided
+    if (!id_guru || !id_guru.trim()) {
+        return res.status(400).json({ message: 'ID Guru (NIP) harus diisi' });
+    }
+    
     const password_hash = hashPasswordPythonStyle(password);
 
-    db.run("INSERT INTO Guru (username, password_hash, nama_guru, email) VALUES (?, ?, ?, ?)",
-        [username, password_hash, nama_guru, email],
+    db.run("INSERT INTO Guru (id_guru, username, password_hash, nama_guru, email) VALUES (?, ?, ?, ?, ?)",
+        [id_guru, username, password_hash, nama_guru, email],
         function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.status(409).json({ message: 'Username guru atau email sudah ada.' });
+                    if (err.message.includes('id_guru')) {
+                        return res.status(409).json({ message: 'ID Guru (NIP) sudah ada.' });
+                    }
+                    return res.status(409).json({ message: 'Username atau email guru sudah ada.' });
                 }
                 return res.status(400).json({ message: err.message });
             }
-            res.status(201).json({ message: 'Guru berhasil ditambahkan', id: this.lastID });
+            res.status(201).json({ message: 'Guru berhasil ditambahkan', id: id_guru });
         }
     );
 };

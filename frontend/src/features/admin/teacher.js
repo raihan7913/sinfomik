@@ -432,7 +432,7 @@ const GuruManagement = () => {
       )}
 
       <ConfirmDialog
-        isOpen={deleteConfirm.show}
+        show={deleteConfirm.show}
         title="Hapus Guru"
         message={`Apakah Anda yakin ingin menghapus guru ${deleteConfirm.teacher?.nama_guru} (NIP: ${deleteConfirm.teacher?.id_guru})? Data yang sudah dihapus tidak dapat dikembalikan.`}
         confirmText="Ya, Hapus"
