@@ -775,10 +775,13 @@ exports.updateWaliKelas = (req, res) => {
                 if (!guru) return res.status(404).json({ message: 'Guru tidak ditemukan.' });
 
                 // Get the 5 core subjects (Bahasa Indonesia, Matematika, IPA, Life Skills, Citizenship)
-                const coreSubjects = ['Bahasa Indonesia', 'Matematika', 'IPA', 'Life Skills', 'Citizenship'];
+                const coreSubjects = ['Bahasa Indonesia', 'Matematika', 'IPAS', 'Life Skills', 'Citizenship'];
+                
+                // Build case-insensitive WHERE clause
+                const whereClauses = coreSubjects.map(s => `UPPER(nama_mapel) = '${s.toUpperCase()}'`).join(' OR ');
                 
                 db.all(
-                    `SELECT id_mapel FROM MataPelajaran WHERE nama_mapel IN ('${coreSubjects.join("','")}')`,
+                    `SELECT id_mapel FROM MataPelajaran WHERE ${whereClauses}`,
                     [],
                     (err, mapelList) => {
                         if (err) return res.status(500).json({ message: err.message });
