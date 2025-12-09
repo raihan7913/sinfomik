@@ -8,7 +8,7 @@ const { getDb } = require('../config/db');
  * Access: ADMIN only
  * 
  * Returns: Trend nilai rata-rata seluruh sekolah per mata pelajaran per tahun ajaran
- *//
+ */
 exports.getSchoolAnalytics = async (req, res) => {
     try {
         const { id_mapel, id_ta_semester } = req.query;
