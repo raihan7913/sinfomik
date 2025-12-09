@@ -32,7 +32,6 @@ exports.getAllStudents = (req, res) => {
         }
         res.json(rows);
     });
-    });
 };
 
 exports.addStudent = (req, res) => {
