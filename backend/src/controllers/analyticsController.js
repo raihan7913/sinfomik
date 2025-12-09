@@ -362,7 +362,9 @@ exports.getAngkatanList = (req, res) => {
             console.error('Error getting angkatan list:', err);
             return res.status(500).json({ message: err.message });
         }
-        res.json(rows);
+        // Filter out null angkatan (shouldn't happen with WHERE clause, but just in case)
+        const filteredRows = rows.filter(row => row.angkatan !== null);
+        res.json(filteredRows);
     });
 };
 
