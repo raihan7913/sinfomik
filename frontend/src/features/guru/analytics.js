@@ -77,7 +77,7 @@ const GuruAnalytics = ({ idGuru }) => {
         }
     }, [guruData]);
 
-    // Auto-load guru data on mount
+    // Auto-load guru data on moun
     useEffect(() => {
         if (idGuru) {
             loadGuruAnalytics();
