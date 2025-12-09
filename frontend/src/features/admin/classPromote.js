@@ -274,7 +274,7 @@ const ClassPromote = () => {
           {/* Info Alert */}
           <StatusMessage 
             type="info"
-            message="This feature helps you promote students to the next class for a new academic year/semester. Select the source class and destination class, then all students will be automatically moved."
+            message="Gunakan fitur ini untuk hanya untuk mempromosikan siswa ke kelas yang sama dengan tahun ajaran yang sama namun semester yang berbeda."
             icon="info-circle"
             className="mb-8"
           />

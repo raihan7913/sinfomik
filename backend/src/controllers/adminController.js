@@ -235,6 +235,17 @@ exports.getAllTASemester = (req, res) => {
 exports.addTASemester = (req, res) => {
     const { tahun_ajaran, semester } = req.body;
     const db = getDb();
+    
+    // Default kelas untuk semester ganjil
+    const defaultKelasNames = [
+        '1 Darehdeh', '1 Gumujeng', '1 Someah',
+        '2 Daria', '2 Gentur', '2 Rancage',
+        '3 Calakan', '3 Rancingeus', '3 Singer',
+        '4 Gumanti', '4 Jatmika', '4 Marahmay',
+        '5 Binangkit', '5 Macakal', '5 Rucita',
+        '6 Gumilang', '6 Parigel', '6 Sonagar'
+    ];
+    
     db.run("INSERT INTO TahunAjaranSemester (tahun_ajaran, semester) VALUES (?, ?)",
         [tahun_ajaran, semester],
         function(err) {
@@ -244,7 +255,50 @@ exports.addTASemester = (req, res) => {
                 }
                 return res.status(400).json({ message: err.message });
             }
-            res.status(201).json({ message: 'Tahun Ajaran & Semester berhasil ditambahkan.', id: this.lastID });
+            
+            const id_ta_semester = this.lastID;
+            
+            // Auto-create default kelas untuk semester Ganjil
+            if (semester === 'Ganjil') {
+                let kelasCreated = 0;
+                let kelasError = null;
+                
+                defaultKelasNames.forEach((kelasName, index) => {
+                    db.run(
+                        "INSERT INTO Kelas (nama_kelas, id_ta_semester) VALUES (?, ?)",
+                        [kelasName, id_ta_semester],
+                        function(err) {
+                            if (err && !err.message.includes('UNIQUE constraint')) {
+                                kelasError = err;
+                            } else if (!err) {
+                                kelasCreated++;
+                            }
+                            
+                            // Jika semua kelas sudah diproses
+                            if (index === defaultKelasNames.length - 1) {
+                                if (kelasError) {
+                                    console.error('Error creating default kelas:', kelasError);
+                                    return res.status(500).json({ 
+                                        message: 'Tahun Ajaran berhasil dibuat, tapi ada error saat membuat kelas default.',
+                                        id: id_ta_semester,
+                                        kelasCreated 
+                                    });
+                                }
+                                res.status(201).json({ 
+                                    message: `Tahun Ajaran & Semester berhasil ditambahkan. ${kelasCreated} kelas default telah dibuat.`, 
+                                    id: id_ta_semester,
+                                    kelasCreated 
+                                });
+                            }
+                        }
+                    );
+                });
+            } else {
+                res.status(201).json({ 
+                    message: 'Tahun Ajaran & Semester berhasil ditambahkan.',
+                    id: id_ta_semester 
+                });
+            }
         }
     );
 };
