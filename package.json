@@ -4,8 +4,10 @@
   "description": "Sistem Informasi Manajemen Akademik",
   "scripts": {
     "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
     "build:backend": "npm run install:backend && echo 'Backend build complete'",
-    "build": "npm run build:backend",
+    "build:frontend": "npm run install:frontend && cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
     "start": "cd backend && node src/server.js"
   },
   "engines": {
