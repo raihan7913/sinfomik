@@ -441,8 +441,6 @@ const InputNilai = ({ activeTASemester, userId }) => {
     }
 
     const [kelasId, mapelId] = selectedAssignment.split('-').map(Number);
-    let successCount = 0;
-    let failCount = 0;
 
     const gradePromises = [];
     
@@ -462,11 +460,6 @@ const InputNilai = ({ activeTASemester, userId }) => {
               nilai: parseFloat(gradeValue),
               keterangan: `TP ${tpNum}`
             })
-            .then(() => { successCount++; })
-            .catch(err => {
-              console.error(`Gagal menyimpan TP${tpNum} untuk ${student.nama_siswa}:`, err);
-              failCount++;
-            })
           );
         }
       });
@@ -485,24 +478,38 @@ const InputNilai = ({ activeTASemester, userId }) => {
             nilai: parseFloat(uasValue),
             keterangan: 'UAS'
           })
-          .then(() => { successCount++; })
-          .catch(err => {
-            console.error(`Gagal menyimpan UAS untuk ${student.nama_siswa}:`, err);
-            failCount++;
-          })
         );
       }
     });
 
     try {
-      await Promise.all(gradePromises);
-      if (successCount > 0) {
-        setMessage(`Berhasil menyimpan ${successCount} nilai. ${failCount} gagal.`);
+      // Use allSettled to wait for ALL requests and track results properly
+      const results = await Promise.allSettled(gradePromises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      if (successful > 0 && failed === 0) {
+        // Semua sukses
+        setMessage(`✓ Berhasil menyimpan ${successful} nilai!`);
         setMessageType('success');
-      } else if (failCount > 0) {
-        setMessage(`Gagal menyimpan ${failCount} nilai. Periksa konsol untuk detail.`);
+      } else if (successful > 0 && failed > 0) {
+        // Sebagian sukses, sebagian gagal - WARNING
+        setMessage(`⚠️ ${successful} nilai berhasil, ${failed} nilai gagal. Periksa dan ulangi!`);
+        setMessageType('warning');
+        
+        // Log detail error untuk debugging
+        const failedDetails = results
+          .filter(r => r.status === 'rejected')
+          .map(r => r.reason?.message || r.reason)
+          .slice(0, 3); // Tampilkan max 3 error pertama
+        console.warn('Failed saves:', failedDetails);
+      } else if (failed > 0) {
+        // Semua gagal
+        setMessage(`❌ Gagal menyimpan ${failed} nilai. Server tidak merespons atau error.`);
         setMessageType('error');
       } else {
+        // Tidak ada input
         setMessage('Tidak ada nilai yang diinput atau diubah.');
         setMessageType('info');
       }

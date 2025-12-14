@@ -21,7 +21,7 @@ exports.getSchoolAnalytics = async (req, res) => {
                 tas.id_ta_semester,
                 tas.tahun_ajaran,
                 tas.semester,
-                ROUND(AVG(n.nilai), 2) as rata_rata_sekolah,
+                ROUND(AVG(n.nilai)::NUMERIC, 2) as rata_rata_sekolah,
                 COUNT(DISTINCT n.id_siswa) as jumlah_siswa,
                 MIN(n.nilai) as nilai_terendah,
                 MAX(n.nilai) as nilai_tertinggi,
@@ -49,7 +49,7 @@ exports.getSchoolAnalytics = async (req, res) => {
         }
 
         query += `
-            GROUP BY m.id_mapel, m.nama_mapel, tas.tahun_ajaran, tas.semester
+            GROUP BY m.id_mapel, m.nama_mapel, tas.id_ta_semester, tas.tahun_ajaran, tas.semester
             ORDER BY tas.tahun_ajaran, tas.semester, m.nama_mapel
         `;
 
@@ -95,7 +95,7 @@ exports.getAngkatanAnalytics = async (req, res) => {
                 tas.id_ta_semester,
                 tas.tahun_ajaran,
                 tas.semester,
-                ROUND(AVG(n.nilai), 2) as rata_rata_angkatan,
+                ROUND(AVG(n.nilai)::NUMERIC, 2) as rata_rata_angkatan,
                 COUNT(DISTINCT n.id_siswa) as jumlah_siswa,
                 MIN(n.nilai) as nilai_terendah,
                 MAX(n.nilai) as nilai_tertinggi
@@ -114,7 +114,7 @@ exports.getAngkatanAnalytics = async (req, res) => {
         }
 
         query += `
-            GROUP BY s.tahun_ajaran_masuk, m.id_mapel, m.nama_mapel, tas.tahun_ajaran, tas.semester
+            GROUP BY s.tahun_ajaran_masuk, m.id_mapel, m.nama_mapel, tas.id_ta_semester, tas.tahun_ajaran, tas.semester
             ORDER BY tas.tahun_ajaran, tas.semester, m.nama_mapel
         `;
 
@@ -183,9 +183,9 @@ exports.getStudentAnalytics = async (req, res) => {
                 k.nama_kelas,
                 n.jenis_nilai,
                 n.urutan_tp,
-                ROUND(AVG(CASE WHEN n.jenis_nilai = 'TP' THEN n.nilai END), 2) as rata_tp,
+                ROUND(AVG(CASE WHEN n.jenis_nilai = 'TP' THEN n.nilai END)::NUMERIC, 2) as rata_tp,
                 MAX(CASE WHEN n.jenis_nilai = 'UAS' THEN n.nilai END) as nilai_uas,
-                ROUND(AVG(n.nilai), 2) as rata_keseluruhan,
+                ROUND(AVG(n.nilai)::NUMERIC, 2) as rata_keseluruhan,
                 COUNT(CASE WHEN n.jenis_nilai = 'TP' THEN 1 END) as jumlah_tp
             FROM Siswa s
             LEFT JOIN Nilai n ON s.id_siswa = n.id_siswa
@@ -203,7 +203,7 @@ exports.getStudentAnalytics = async (req, res) => {
         }
 
         query += `
-            GROUP BY s.id_siswa, m.id_mapel, m.nama_mapel, tas.tahun_ajaran, tas.semester, k.nama_kelas
+            GROUP BY s.id_siswa, s.nama_siswa, m.id_mapel, m.nama_mapel, tas.id_ta_semester, tas.tahun_ajaran, tas.semester, k.id_kelas, k.nama_kelas, n.jenis_nilai, n.urutan_tp
             ORDER BY tas.tahun_ajaran, tas.semester, m.nama_mapel
         `;
 
@@ -276,7 +276,7 @@ exports.getGuruAnalytics = async (req, res) => {
                 tas.id_ta_semester,
                 tas.tahun_ajaran,
                 tas.semester,
-                ROUND(AVG(n.nilai), 2) as rata_rata_kelas,
+                ROUND(AVG(n.nilai)::NUMERIC, 2) as rata_rata_kelas,
                 COUNT(DISTINCT n.id_siswa) as jumlah_siswa,
                 MIN(n.nilai) as nilai_terendah,
                 MAX(n.nilai) as nilai_tertinggi,
@@ -316,7 +316,7 @@ exports.getGuruAnalytics = async (req, res) => {
         }
 
         query += `
-            GROUP BY g.id_guru, m.id_mapel, k.id_kelas, tas.tahun_ajaran, tas.semester
+            GROUP BY g.id_guru, g.nama_guru, m.id_mapel, m.nama_mapel, k.id_kelas, k.nama_kelas, tas.id_ta_semester, tas.tahun_ajaran, tas.semester, s.id_siswa, s.nama_siswa
             ORDER BY tas.tahun_ajaran, tas.semester, m.nama_mapel, k.nama_kelas
         `;
 
@@ -397,7 +397,7 @@ exports.compareStudents = async (req, res) => {
                 m.nama_mapel,
                 tas.tahun_ajaran,
                 tas.semester,
-                ROUND(AVG(n.nilai), 2) as rata_rata
+                ROUND(AVG(n.nilai)::NUMERIC, 2) as rata_rata
             FROM Siswa s
             LEFT JOIN Nilai n ON s.id_siswa = n.id_siswa
             LEFT JOIN MataPelajaran m ON n.id_mapel = m.id_mapel
@@ -413,7 +413,7 @@ exports.compareStudents = async (req, res) => {
         }
 
         query += `
-            GROUP BY s.id_siswa, s.nama_siswa, m.id_mapel, m.nama_mapel, tas.tahun_ajaran, tas.semester
+            GROUP BY s.id_siswa, s.nama_siswa, m.id_mapel, m.nama_mapel, tas.id_ta_semester, tas.tahun_ajaran, tas.semester
             ORDER BY tas.tahun_ajaran, tas.semester, s.nama_siswa
         `;
 

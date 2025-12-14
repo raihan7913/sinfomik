@@ -4,7 +4,7 @@ const { createHash } = require('crypto'); // Untuk hashing SHA256 (sesuai data d
 const bcrypt = require('bcryptjs'); // Untuk membandingkan hash password (jika menggunakan bcrypt)
 const jwt = require('jsonwebtoken'); // Untuk JWT authentication
 const JWT_SECRET = process.env.JWT_SECRET || 'sinfomik_super_secret_key_2025_change_in_production_please';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '5h'; // Testing: 5h, Production: 24h
 
 // Helper untuk hashing password (sesuai dengan yang digunakan di Python hashlib.sha256)
 function hashPasswordPythonStyle(password) {
@@ -47,7 +47,7 @@ exports.login = (req, res) => {
             return res.status(400).json({ message: 'Tipe pengguna tidak valid.' });
     }
 
-    const query = `SELECT ${idField}, ${nameField}, password_hash FROM ${tableName} WHERE ${usernameField} = ?`;
+    const query = `SELECT ${idField}, ${nameField}, password_hash FROM ${tableName} WHERE ${usernameField} = $1`;
 
     db.get(query, [username], async (err, user) => {
         if (err) {
@@ -71,7 +71,7 @@ exports.login = (req, res) => {
             // If SHA256 worked, upgrade to bcrypt for better security
             if (isPasswordValid) {
                 const newHash = await hashPasswordBcrypt(password);
-                const updateQuery = `UPDATE ${tableName} SET password_hash = ? WHERE ${idField} = ?`;
+                const updateQuery = `UPDATE ${tableName} SET password_hash = $1 WHERE ${idField} = $2`;
                 db.run(updateQuery, [newHash, user[idField]], (err) => {
                     if (err) {
                         console.error('Failed to upgrade password hash:', err);
@@ -103,7 +103,7 @@ exports.login = (req, res) => {
 
         // Update last_login_timestamp to enforce single active session
         // IMPORTANT: Use callback to ensure DB is updated BEFORE responding to client
-        const updateQuery = `UPDATE ${tableName} SET last_login_timestamp = ? WHERE ${idField} = ?`;
+        const updateQuery = `UPDATE ${tableName} SET last_login_timestamp = $1 WHERE ${idField} = $2`;
         db.run(updateQuery, [issuedAt, user[idField]], function(err) {
             if (err) {
                 console.error('Failed to update last_login_timestamp:', err);
@@ -125,5 +125,22 @@ exports.login = (req, res) => {
                 token: token // JWT token untuk authentication
             });
         });
+    });
+};
+
+// Endpoint untuk verify token dan extend session
+exports.getCurrentUser = (req, res) => {
+    // This endpoint is protected by verifyToken middleware, so token is already verified
+    // Simply responding confirms the token is valid and session is active
+    const user = req.user;
+    
+    res.status(200).json({
+        success: true,
+        user: {
+            id: user.id,
+            username: user.nama,
+            type: user.user_type
+        },
+        message: 'Token masih aktif'
     });
 };

@@ -33,9 +33,16 @@ const fetchData = async (url, options = {}) => {
         
         // Handle session invalidation from other device
         if (errorData.sessionInvalidated) {
-          throw new Error(errorData.message || 'Session logged in from another device. Please login again.');
+          // Store message for display on login page
+          sessionStorage.setItem('sessionInvalidatedMessage', 
+            errorData.message || 'Anda login dari device lain. Sesi sebelumnya ditutup untuk keamanan.'
+          );
+          window.location.replace('/login');
+          throw new Error('Session invalidated from another device');
         }
         
+        // Generic session expiry
+        sessionStorage.setItem('sessionExpiredMessage', 'Sesi login Anda telah berakhir. Silakan login kembali.');
         window.location.replace('/login');
       }
       throw new Error('Session expired');
@@ -47,6 +54,13 @@ const fetchData = async (url, options = {}) => {
       throw new Error(data429.message || 'Rate limit exceeded. Please wait.');
     }
     
+    if (response.status === 401) {
+      // Throw error with details - UI will handle redirect or show message
+      const data401 = await response.json().catch(() => ({}));
+      const err = new Error(data401.message || 'Unauthorized');
+      err.details = data401;
+      throw err;
+    }
     const data = await response.json();
     
     if (!response.ok) {
@@ -429,7 +443,9 @@ export const importEnrollment = async (file) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Gagal import enrollment');
+      const err = new Error(data.message || 'Gagal import enrollment');
+      err.details = data.details || null;
+      throw err;
     }
 
     return data;

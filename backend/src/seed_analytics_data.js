@@ -77,12 +77,12 @@ async function seedAnalyticsData() {
 
         // Add more TA/Semester if needed
         const requiredTASemesters = [
-            { tahun_ajaran: '2022/2023', semester: 'Ganjil', is_aktif: 0 },
-            { tahun_ajaran: '2022/2023', semester: 'Genap', is_aktif: 0 },
-            { tahun_ajaran: '2023/2024', semester: 'Ganjil', is_aktif: 0 },
-            { tahun_ajaran: '2023/2024', semester: 'Genap', is_aktif: 0 },
-            { tahun_ajaran: '2024/2025', semester: 'Ganjil', is_aktif: 1 },
-            { tahun_ajaran: '2024/2025', semester: 'Genap', is_aktif: 0 },
+            { tahun_ajaran: '2022/2023', semester: 'Ganjil', is_aktif: false },
+            { tahun_ajaran: '2022/2023', semester: 'Genap', is_aktif: false },
+            { tahun_ajaran: '2023/2024', semester: 'Ganjil', is_aktif: false },
+            { tahun_ajaran: '2023/2024', semester: 'Genap', is_aktif: false },
+            { tahun_ajaran: '2024/2025', semester: 'Ganjil', is_aktif: true },
+            { tahun_ajaran: '2024/2025', semester: 'Genap', is_aktif: false },
         ];
 
         console.log('\n📅 Ensuring all TA/Semester exist...');
@@ -94,7 +94,7 @@ async function seedAnalyticsData() {
             
             if (!existing) {
                 await runQuery(
-                    'INSERT INTO TahunAjaranSemester (tahun_ajaran, semester, is_aktif) VALUES (?, ?, ?)',
+                    'INSERT INTO tahunajaransemester (tahun_ajaran, semester, is_aktif) VALUES (?, ?, ?)',
                     [tas.tahun_ajaran, tas.semester, tas.is_aktif]
                 );
                 console.log(`  ✅ Added: ${tas.tahun_ajaran} ${tas.semester}`);

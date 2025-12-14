@@ -56,10 +56,10 @@ exports.saveKkmSettings = async (req, res) => {
             try {
                 await new Promise((resolve, reject) => {
                     db.run(
-                        `INSERT INTO KKM_Settings (id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai_kkm, tanggal_update)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                        `INSERT INTO kkm_settings (id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai_kkm, tanggal_update)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
                          ON CONFLICT(id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp)
-                         DO UPDATE SET nilai_kkm = excluded.nilai_kkm, tanggal_update = datetime('now')`,
+                         DO UPDATE SET nilai_kkm = excluded.nilai_kkm, tanggal_update = NOW()`,
                         [id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai_kkm],
                         function(err) {
                             if (err) reject(err);
@@ -107,7 +107,7 @@ exports.getKkmSettings = async (req, res) => {
         const kkmData = await new Promise((resolve, reject) => {
             db.all(
                 `SELECT jenis_nilai, urutan_tp, nilai_kkm 
-                 FROM KKM_Settings 
+                 FROM kkm_settings 
                  WHERE id_guru = ? AND id_mapel = ? AND id_kelas = ? AND id_ta_semester = ?
                  ORDER BY jenis_nilai, urutan_tp`,
                 [id_guru, id_mapel, id_kelas, id_ta_semester],
@@ -159,7 +159,7 @@ exports.deleteKkmSettings = async (req, res) => {
         
         await new Promise((resolve, reject) => {
             db.run(
-                `DELETE FROM KKM_Settings 
+                `DELETE FROM kkm_settings 
                  WHERE id_guru = ? AND id_mapel = ? AND id_kelas = ? AND id_ta_semester = ?`,
                 [id_guru, id_mapel, id_kelas, id_ta_semester],
                 function(err) {

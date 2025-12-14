@@ -218,9 +218,9 @@ const ClassPromote = () => {
     <ModuleContainer>
       <PageHeader
         icon="level-up-alt"
-        title="Student Class Promotion"
-        subtitle="Promote students to the next grade level efficiently"
-        badge={`${studentsInFromKelas.length} students ready`}
+        title="Pindah Semester Kelas"
+        subtitle="Memindahkan siswa ke kelas pada semester berikutnya"
+        badge={`${studentsInFromKelas.length} siswa siap dipindahkan`}
         action={
           <Button
             variant="secondary"

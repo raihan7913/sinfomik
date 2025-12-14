@@ -32,22 +32,33 @@ exports.importCapaianPembelajaran = async (req, res) => {
         };
 
         // Baca judul di sel A2 (baris 2 kolom 1) -> data[1][0]
-        const titleRow = data[1][0]; // "CAPAIAN PEMBELAJARAN CITIZENSHIP" or "CAPAIAN PEMBELAJARAN Life Skills"
+        const titleRow = data[1] && data[1][0] ? data[1][0] : null; // "CAPAIAN PEMBELAJARAN CITIZENSHIP" or "CAPAIAN PEMBELAJARAN Life Skills"
+        if (!titleRow) {
+            throw new Error('Judul file Excel tidak ditemukan. Pastikan format file sesuai (Baris 2 berisi "CAPAIAN PEMBELAJARAN <Mapel>").');
+        }
         
         // Extract mapel name: remove "CAPAIAN PEMBELAJARAN " prefix
         // Handle both single word (CITIZENSHIP) and multi-word (Life Skills) subjects
         const mapelName = titleRow
             .replace(/^CAPAIAN PEMBELAJARAN\s+/i, '') // Remove prefix (case insensitive)
             .trim();
+
+        console.log(`[IMPORT-CP] Detected mapelName: "${mapelName}"`);
         
         // Dapatkan id_mapel
         try {
+            console.log('[IMPORT-CP] Import request by user:', req.user ? `${req.user.user_type}/${req.user.id}` : 'anonymous');
+            console.log('[IMPORT-CP] Uploaded file:', req.file ? req.file.originalname : '(no file)');
+            // Case-insensitive lookup because Excel might contain different casing/spacing
             const mapelRow = await new Promise((resolve, reject) => {
                 db.get(
-                    "SELECT id_mapel FROM MataPelajaran WHERE nama_mapel = ?",
-                    [mapelName],
+                    "SELECT id_mapel FROM MataPelajaran WHERE LOWER(nama_mapel) = LOWER(?)",
+                    [mapelName.trim()],
                     (err, row) => {
-                        if (err) reject(err);
+                        if (err) {
+                            console.error('Error while querying MataPelajaran:', err.message);
+                            return reject(err);
+                        }
                         resolve(row);
                     }
                 );
@@ -693,7 +704,7 @@ exports.importStudents = async (req, res) => {
         // Get active TA semester
         let activeTASemesterTahun = '';
         const activeTASemester = await new Promise((resolve) => {
-            db.get('SELECT tahun_ajaran FROM TahunAjaranSemester WHERE is_aktif = 1', [], (err, row) => {
+            db.get('SELECT tahun_ajaran FROM tahunajaransemester WHERE is_aktif = ?', [true], (err, row) => {
                 if (!err && row) {
                     activeTASemesterTahun = row.tahun_ajaran;
                 }
@@ -836,6 +847,9 @@ exports.exportEnrollmentTemplate = async (req, res) => {
 // Import Enrollment Siswa ke Kelas dari Excel
 exports.importEnrollment = async (req, res) => {
     try {
+        console.log('[IMPORT-ENROLL] Import request by user:', req.user ? `${req.user.user_type}/${req.user.id}` : 'anonymous');
+        console.log('[IMPORT-ENROLL] Uploaded file:', req.file ? req.file.originalname : '(no file)');
+
         if (!req.file) {
             return res.status(400).json({ message: 'Mohon upload file Excel' });
         }
@@ -847,7 +861,7 @@ exports.importEnrollment = async (req, res) => {
         // Get active TA Semester
         const db = getDb();
         const activeTASemester = await new Promise((resolve, reject) => {
-            db.get('SELECT id_ta_semester FROM TahunAjaranSemester WHERE is_aktif = 1', (err, row) => {
+            db.get('SELECT id_ta_semester FROM tahunajaransemester WHERE is_aktif = ?', [true], (err, row) => {
                 if (err) return reject(err);
                 resolve(row);
             });
@@ -860,6 +874,7 @@ exports.importEnrollment = async (req, res) => {
         }
 
         const idTASemester = activeTASemester.id_ta_semester;
+        console.log('[IMPORT-ENROLL] Active TA Semester id:', idTASemester);
         
         // Find header row (should contain 'NISN' and 'Nama Kelas')
         let headerRowIndex = -1;
@@ -904,6 +919,7 @@ exports.importEnrollment = async (req, res) => {
         
         // Process data rows (skip header and instructions)
         const dataRows = data.slice(headerRowIndex + 1);
+        console.log(`[IMPORT-ENROLL] Found ${dataRows.length} rows to process (header index ${headerRowIndex})`);
         
         for (const row of dataRows) {
             // Skip empty rows
@@ -925,40 +941,58 @@ exports.importEnrollment = async (req, res) => {
                 continue;
             }
             
+            console.log(`[IMPORT-ENROLL] Processing row: NISN='${nisn}', Kelas='${namaKelas}'`);
             try {
                 await new Promise((resolve, reject) => {
                     // Check if student exists
-                    db.get('SELECT id_siswa FROM Siswa WHERE id_siswa = ?', [nisn], (err, siswa) => {
+                    const nisnClean = nisn.trim();
+                    // Try numeric lookup first (id_siswa int), fall back to string compare
+                    const tryNumeric = /^[0-9]+$/.test(nisnClean);
+                    const checkStudent = (cb) => {
+                        if (tryNumeric) {
+                            db.get('SELECT id_siswa FROM Siswa WHERE id_siswa = ?', [parseInt(nisnClean)], cb);
+                        } else {
+                            // Fallback to text compare
+                            db.get('SELECT id_siswa FROM Siswa WHERE LOWER(CAST(id_siswa AS TEXT)) = LOWER(?)', [nisnClean], cb);
+                        }
+                    };
+
+                    checkStudent((err, siswa) => {
                         if (err) return reject(err);
                         
-                        if (!siswa) {
+                            if (!siswa) {
                             results.failed++;
                             results.errors.push(`Siswa dengan NISN ${nisn} tidak ditemukan`);
+                            console.warn(`[IMPORT-ENROLL] Student not found: ${nisn}`);
                             return resolve();
                         }
                         
                         // Find class by name in active TA Semester
+                        // Normalize class name to be more tolerant (case + whitespace)
+                        const namaKelasClean = namaKelas.trim();
                         db.get(
-                            'SELECT id_kelas FROM Kelas WHERE nama_kelas = ? AND id_ta_semester = ?',
-                            [namaKelas, idTASemester],
+                            'SELECT id_kelas FROM Kelas WHERE LOWER(TRIM(nama_kelas)) = LOWER(TRIM(?)) AND id_ta_semester = ?',
+                            [namaKelasClean, idTASemester],
                             (err, kelas) => {
                                 if (err) return reject(err);
                                 
                                 if (!kelas) {
                                     results.failed++;
                                     results.errors.push(`Kelas "${namaKelas}" tidak ditemukan di semester aktif untuk NISN: ${nisn}`);
+                                    console.warn(`[IMPORT-ENROLL] Class not found: ${namaKelas} (semester ${idTASemester})`);
                                     return resolve();
                                 }
                                 
                                 // Check if already enrolled
-                                db.get(
+                                        db.get(
                                     'SELECT * FROM SiswaKelas WHERE id_siswa = ? AND id_kelas = ? AND id_ta_semester = ?',
-                                    [nisn, kelas.id_kelas, idTASemester],
+                                    [siswa.id_siswa, kelas.id_kelas, idTASemester],
                                     (err, existing) => {
                                         if (err) return reject(err);
                                         
                                         if (existing) {
                                             results.skipped++;
+                                            console.log(`[IMPORT-ENROLL] Already enrolled: NISN=${siswa.id_siswa}, id_kelas=${kelas.id_kelas}`);
                                             return resolve();
                                         }
                                         
@@ -966,11 +1000,12 @@ exports.importEnrollment = async (req, res) => {
                                         db.run(
                                             `INSERT INTO SiswaKelas (id_siswa, id_kelas, id_ta_semester)
                                              VALUES (?, ?, ?)`,
-                                            [nisn, kelas.id_kelas, idTASemester],
+                                            [siswa.id_siswa, kelas.id_kelas, idTASemester],
                                             function(err) {
                                                 if (err) {
                                                     results.failed++;
                                                     results.errors.push(`Gagal enroll NISN ${nisn} ke ${namaKelas}: ${err.message}`);
+                                                    console.error(`[IMPORT-ENROLL] Failed to insert enrollment: NISN=${siswa.id_siswa}, id_kelas=${kelas.id_kelas}`, err.message);
                                                     return reject(err);
                                                 }
                                                 results.success++;
@@ -989,6 +1024,7 @@ exports.importEnrollment = async (req, res) => {
             }
         }
         
+        console.log('[IMPORT-ENROLL] Summary:', results);
         res.json({
             success: true,
             message: `Import selesai: ${results.success} berhasil, ${results.skipped} sudah terdaftar, ${results.failed} gagal`,

@@ -46,7 +46,7 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
       setKelas(kelasData);
       setAssignments(assignmentsData);
 
-      if (teachersData.length > 0 && !selectedGuruId) setSelectedGuruId(teachersData[0].id_guru);
+      if (teachersData.length > 0 && !selectedGuruId) setSelectedGuruId(String(teachersData[0].id_guru));
       if (mapelData.length > 0 && !selectedMapelId) setSelectedMapelId(mapelData[0].id_mapel);
       if (kelasData.length > 0 && !selectedKelasId) setSelectedKelasId(kelasData[0].id_kelas);
 
@@ -471,7 +471,7 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
                       </label>
                       <select 
                         value={selectedGuruId} 
-                        onChange={(e) => setSelectedGuruId(parseInt(e.target.value))}
+                        onChange={(e) => setSelectedGuruId(e.target.value)}
                         required
                       >
                         {teachers.map(t => (

@@ -174,6 +174,7 @@ const EditTeacherModal = ({ teacher, onClose, onSave }) => {
 const GuruManagement = () => {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
@@ -192,6 +193,8 @@ const GuruManagement = () => {
   useEffect(() => {
     fetchTeachers();
   }, []);
+
+  const itemsPerPage = 20;
 
   const fetchTeachers = async () => {
     setLoading(true);
@@ -356,70 +359,105 @@ const GuruManagement = () => {
         <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
           <i className="fas fa-list mr-2 text-indigo-600"></i>
           Daftar Guru
+          <span className="ml-auto text-sm font-normal text-gray-500">
+            Total: {teachers.length}
+          </span>
         </h2>
 
         {loading && <LoadingSpinner text="Memuat data guru..." />}
         {error && <StatusMessage type="error" message={`Error: ${error}`} autoClose={false} />}
 
         {!loading && !error && (
-          <Table
-            columns={[
-              {
-                key: 'id_guru',
-                label: 'NIP',
-                sortable: true,
-                render: (value) => (
-                  <span className="font-mono font-semibold text-gray-900">{value}</span>
-                )
-              },
-              {
-                key: 'username',
-                label: 'Username',
-                sortable: true,
-                render: (value) => (
-                  <span className="font-medium text-gray-900">{value}</span>
-                )
-              },
-              {
-                key: 'nama_guru',
-                label: 'Nama Guru',
-                sortable: true,
-                render: (value) => (
-                  <span className="font-medium text-gray-900">{value}</span>
-                )
-              },
-              {
-                key: 'email',
-                label: 'Email',
-                sortable: true,
-                render: (value) => (
-                  <span className="text-gray-700">{value || '-'}</span>
-                )
-              }
-            ]}
-            data={teachers}
-            emptyMessage="Belum ada guru terdaftar"
-            actions={(teacher) => (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon="edit"
-                  onClick={() => handleEditClick(teacher)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  icon="trash-alt"
-                  onClick={() => handleDeleteClick(teacher)}
-                >
-                  Hapus
-                </Button>
+          <div className="space-y-4">
+            <Table
+              columns={[
+                {
+                  key: 'id_guru',
+                  label: 'NIP',
+                  sortable: true,
+                  render: (value) => (
+                    <span className="font-mono font-semibold text-gray-900">{value}</span>
+                  )
+                },
+                {
+                  key: 'username',
+                  label: 'Username',
+                  sortable: true,
+                  render: (value) => (
+                    <span className="font-medium text-gray-900">{value}</span>
+                  )
+                },
+                {
+                  key: 'nama_guru',
+                  label: 'Nama Guru',
+                  sortable: true,
+                  render: (value) => (
+                    <span className="font-medium text-gray-900">{value}</span>
+                  )
+                },
+                {
+                  key: 'email',
+                  label: 'Email',
+                  sortable: true,
+                  render: (value) => (
+                    <span className="text-gray-700">{value || '-'}</span>
+                  )
+                }
+              ]}
+              data={teachers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+              emptyMessage="Belum ada guru terdaftar"
+              actions={(teacher) => (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon="edit"
+                    onClick={() => handleEditClick(teacher)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon="trash-alt"
+                    onClick={() => handleDeleteClick(teacher)}
+                  >
+                    Hapus
+                  </Button>
+                </div>
+              )}
+            />
+
+            {/* Pagination */}
+            {teachers.length > itemsPerPage && (
+              <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Halaman {currentPage} dari {Math.ceil(teachers.length / itemsPerPage)} 
+                  ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, teachers.length)} dari {teachers.length})
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon="chevron-left"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Sebelumnya
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon="chevron-right"
+                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(teachers.length / itemsPerPage), prev + 1))}
+                    disabled={currentPage === Math.ceil(teachers.length / itemsPerPage)}
+                  >
+                    Selanjutnya
+                  </Button>
+                </div>
               </div>
             )}
-          />
+          </div>
         )}
       </div>
 

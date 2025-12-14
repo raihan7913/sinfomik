@@ -420,6 +420,52 @@ const AdminAnalytics = () => {
         return sortedData;
     };
 
+    // Group student data by class and semester
+    const groupStudentDataByClassSemester = (data) => {
+        if (!data || data.length === 0) return {};
+
+        const grouped = {};
+        
+        data.forEach(item => {
+            // Extract class level (Kelas 1, Kelas 2, etc)
+            const classPart = item.nama_kelas ? item.nama_kelas.split(' ')[0] : 'Unknown';
+            const semesterPart = item.semester || 'Unknown';
+            
+            const groupKey = `${classPart} - Semester ${semesterPart}`;
+            
+            if (!grouped[groupKey]) {
+                grouped[groupKey] = {
+                    className: classPart,
+                    semester: semesterPart,
+                    period: `${item.tahun_ajaran || ''}`,
+                    data: []
+                };
+            }
+            
+            grouped[groupKey].data.push(item);
+        });
+
+        // Sort by class level and semester
+        const sortedKeys = Object.keys(grouped).sort((a, b) => {
+            const aClass = parseInt(grouped[a].className) || 0;
+            const bClass = parseInt(grouped[b].className) || 0;
+            
+            if (aClass !== bClass) return aClass - bClass;
+            
+            const aSem = grouped[a].semester === 'Ganjil' ? 1 : 2;
+            const bSem = grouped[b].semester === 'Ganjil' ? 1 : 2;
+            
+            return aSem - bSem;
+        });
+
+        const result = {};
+        sortedKeys.forEach(key => {
+            result[key] = grouped[key];
+        });
+
+        return result;
+    };
+
     // Calculate stats
     const calculateStats = () => {
         let data = [];
@@ -1029,34 +1075,84 @@ const AdminAnalytics = () => {
                                         </div>
                                     </div>
 
-                                    {/* Data Table */}
-                                    <div className="overflow-x-auto bg-white rounded-xl border-2 border-gray-200 shadow-sm">
-                                        <table className="min-w-full">
-                                            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                                                <tr>
-                                                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Mata Pelajaran</th>
-                                                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Periode</th>
-                                                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Kelas</th>
-                                                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Rata TP</th>
-                                                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">UAS</th>
-                                                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Nilai Akhir</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200">
-                                                {studentData.data
-                                                    .filter(item => selectedMapelStudent === 'all' || parseInt(item.id_mapel) === parseInt(selectedMapelStudent))
-                                                    .map((item, idx) => (
-                                                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="px-6 py-4 text-sm text-gray-900">{item.nama_mapel || '-'}</td>
-                                                            <td className="px-6 py-4 text-sm text-gray-700">{item.tahun_ajaran || '-'} {item.semester || ''}</td>
-                                                            <td className="px-6 py-4 text-sm text-gray-700">{item.nama_kelas || '-'}</td>
-                                                            <td className="px-6 py-4 text-center text-sm text-gray-700">{item.rata_tp || '-'}</td>
-                                                            <td className="px-6 py-4 text-center text-sm text-gray-700">{item.nilai_uas || '-'}</td>
-                                                            <td className="px-6 py-4 text-center text-sm font-bold text-purple-600">{item.rata_keseluruhan || '-'}</td>
-                                                        </tr>
-                                                    ))}
-                                            </tbody>
-                                        </table>
+                                    {/* Data Table - Grouped by Class and Semester */}
+                                    <div className="space-y-8">
+                                        {(() => {
+                                            const filteredData = selectedMapelStudent === 'all' 
+                                                ? studentData.data 
+                                                : studentData.data.filter(item => parseInt(item.id_mapel) === parseInt(selectedMapelStudent));
+                                            
+                                            const groupedData = groupStudentDataByClassSemester(filteredData);
+                                            const groupKeys = Object.keys(groupedData);
+
+                                            if (groupKeys.length === 0) {
+                                                return (
+                                                    <EmptyState
+                                                        icon="clipboard-list"
+                                                        title="Tidak Ada Data Nilai"
+                                                        description="Tidak ada data nilai yang sesuai dengan filter mata pelajaran."
+                                                    />
+                                                );
+                                            }
+
+                                            return groupKeys.map((groupKey, groupIdx) => {
+                                                const groupInfo = groupedData[groupKey];
+                                                const groupItems = groupInfo.data;
+
+                                                // Calculate group statistics
+                                                const groupNilai = groupItems.map(item => parseFloat(item.rata_keseluruhan || 0)).filter(v => v > 0);
+                                                const groupAvg = groupNilai.length > 0 
+                                                    ? (groupNilai.reduce((a, b) => a + b, 0) / groupNilai.length).toFixed(2)
+                                                    : '-';
+
+                                                return (
+                                                    <div key={groupIdx} className="border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                                        {/* Group Header */}
+                                                        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <div>
+                                                                    <h4 className="text-lg font-bold text-white">
+                                                                        <i className="fas fa-graduation-cap mr-2"></i>
+                                                                        {groupKey}
+                                                                    </h4>
+                                                                    <p className="text-sm text-purple-100 mt-1">
+                                                                        Tahun Ajaran: {groupInfo.period} | {groupItems.length} Mapel
+                                                                    </p>
+                                                                </div>
+                                                                <div className="bg-white bg-opacity-20 px-4 py-2 rounded-lg">
+                                                                    <p className="text-xs text-purple-100 font-medium">Rata-rata Kelas</p>
+                                                                    <p className="text-2xl font-bold text-white">{groupAvg}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Group Table */}
+                                                        <div className="overflow-x-auto">
+                                                            <table className="min-w-full">
+                                                                <thead className="bg-gray-50">
+                                                                    <tr>
+                                                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 border-b">Mata Pelajaran</th>
+                                                                        <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700 border-b">Rata TP</th>
+                                                                        <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700 border-b">UAS</th>
+                                                                        <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700 border-b">Nilai Akhir</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-gray-200">
+                                                                    {groupItems.map((item, idx) => (
+                                                                        <tr key={idx} className="hover:bg-purple-50 transition-colors">
+                                                                            <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.nama_mapel || '-'}</td>
+                                                                            <td className="px-6 py-4 text-center text-sm text-gray-700">{item.rata_tp || '-'}</td>
+                                                                            <td className="px-6 py-4 text-center text-sm text-gray-700">{item.nilai_uas || '-'}</td>
+                                                                            <td className="px-6 py-4 text-center text-sm font-bold text-purple-600">{item.rata_keseluruhan || '-'}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
                                     </div>
                                 </>
                             ) : (

@@ -155,6 +155,7 @@ const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [activeTASemester, setActiveTASemester] = useState(null);
   const [newStudent, setNewStudent] = useState({
     id_siswa: '',
@@ -169,6 +170,8 @@ const StudentManagement = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, student: null });
   const [isImporting, setIsImporting] = useState(false);
+
+  const itemsPerPage = 20;
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -451,70 +454,102 @@ const StudentManagement = () => {
         )}
         
         {!loading && !error && (
-          <Table
-              columns={[
-                { 
-                  key: 'id_siswa', 
-                  label: 'NISN', 
-                  sortable: true,
-                  render: (value) => (
-                    <span className="font-mono font-semibold text-gray-900">{value}</span>
-                  )
-                },
-                { 
-                  key: 'nama_siswa', 
-                  label: 'Nama Siswa', 
-                  sortable: true,
-                  render: (value) => (
-                    <span className="font-medium text-gray-900">{value}</span>
-                  )
-                },
-                { 
-                  key: 'tanggal_lahir', 
-                  label: 'Tanggal Lahir', 
-                  sortable: true,
-                  render: (value) => (
-                    <span className="text-gray-700">{value || '-'}</span>
-                  )
-                },
-                { 
-                  key: 'jenis_kelamin', 
-                  label: 'Jenis Kelamin', 
-                  sortable: true,
-                  render: (value) => (
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                      value === 'L' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-pink-100 text-pink-800'
-                    }`}>
-                      {value === 'L' ? '👨 Laki-Laki' : '👩 Perempuan'}
-                    </span>
-                  )
-                }
-              ]}
-              data={students}
-              emptyMessage="Belum ada siswa terdaftar"
-              actions={(student) => (
-                <div className="flex flex-col sm:flex-row gap-2">
+          <div className="space-y-4">
+            <Table
+                columns={[
+                  { 
+                    key: 'id_siswa', 
+                    label: 'NISN', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className="font-mono font-semibold text-gray-900">{value}</span>
+                    )
+                  },
+                  { 
+                    key: 'nama_siswa', 
+                    label: 'Nama Siswa', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className="font-medium text-gray-900">{value}</span>
+                    )
+                  },
+                  { 
+                    key: 'tanggal_lahir', 
+                    label: 'Tanggal Lahir', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className="text-gray-700">{value || '-'}</span>
+                    )
+                  },
+                  { 
+                    key: 'jenis_kelamin', 
+                    label: 'Jenis Kelamin', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        value === 'L' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-pink-100 text-pink-800'
+                      }`}>
+                        {value === 'L' ? '👨 Laki-Laki' : '👩 Perempuan'}
+                      </span>
+                    )
+                  }
+                ]}
+                data={students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+                emptyMessage="Belum ada siswa terdaftar"
+                actions={(student) => (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon="edit"
+                      onClick={() => handleEditClick(student)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon="trash-alt"
+                      onClick={() => handleDeleteClick(student)}
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                )}
+            />
+
+            {/* Pagination */}
+            {students.length > itemsPerPage && (
+              <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Halaman {currentPage} dari {Math.ceil(students.length / itemsPerPage)} 
+                  ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, students.length)} dari {students.length})
+                </div>
+                <div className="flex gap-2">
                   <Button
-                    variant="primary"
+                    variant="ghost"
                     size="sm"
-                    icon="edit"
-                    onClick={() => handleEditClick(student)}
+                    icon="chevron-left"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
                   >
-                    Edit
+                    Sebelumnya
                   </Button>
                   <Button
-                    variant="danger"
+                    variant="ghost"
                     size="sm"
-                    icon="trash-alt"
-                    onClick={() => handleDeleteClick(student)}
+                    icon="chevron-right"
+                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(students.length / itemsPerPage), prev + 1))}
+                    disabled={currentPage === Math.ceil(students.length / itemsPerPage)}
                   >
-                    Hapus
+                    Selanjutnya
                   </Button>
                 </div>
-              )}
-          />
+              </div>
+            )}
+          </div>
         )}
       </div>
 

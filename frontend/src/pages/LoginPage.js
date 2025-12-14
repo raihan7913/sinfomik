@@ -14,6 +14,20 @@ function LoginPage({ onLogin }) {
   useEffect(() => {
     // Initialize feather icons
     feather.replace();
+    
+    // Check for session invalidation or expiry messages from previous logout
+    const sessionInvalidatedMsg = sessionStorage.getItem('sessionInvalidatedMessage');
+    const sessionExpiredMsg = sessionStorage.getItem('sessionExpiredMessage');
+    
+    if (sessionInvalidatedMsg) {
+      setMessage(sessionInvalidatedMsg);
+      setMessageType('warning');
+      sessionStorage.removeItem('sessionInvalidatedMessage');
+    } else if (sessionExpiredMsg) {
+      setMessage(sessionExpiredMsg);
+      setMessageType('info');
+      sessionStorage.removeItem('sessionExpiredMessage');
+    }
   }, []);
 
   const handleSubmit = async (e) => {

@@ -15,6 +15,7 @@ const TASemesterManagement = ({ activeTASemester, setActiveTASemester }) => {
   const [taSemesters, setTASemesters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [newTahunAjaran, setNewTahunAjaran] = useState('');
   const [newSemester, setNewSemester] = useState('Ganjil');
   const [message, setMessage] = useState('');
@@ -27,6 +28,8 @@ const TASemesterManagement = ({ activeTASemester, setActiveTASemester }) => {
     variant: 'info',
     onConfirm: null
   });
+
+  const itemsPerPage = 20;
 
   const fetchTASemesters = async () => {
     setLoading(true);
@@ -219,6 +222,9 @@ const TASemesterManagement = ({ activeTASemester, setActiveTASemester }) => {
             <h4 className="text-lg font-semibold text-gray-700 flex items-center">
               <i className="fas fa-list-alt mr-2 text-purple-500"></i>
               Daftar Tahun Ajaran & Semester
+              <span className="ml-auto text-sm font-normal text-gray-500">
+                Total: {taSemesters.length}
+              </span>
             </h4>
           </div>
           <div className="overflow-x-auto">
@@ -233,7 +239,7 @@ const TASemesterManagement = ({ activeTASemester, setActiveTASemester }) => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {taSemesters.map((row, index) => (
+                {taSemesters.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row, index) => (
                   <tr key={row.id_ta_semester} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.id_ta_semester}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.tahun_ajaran}</td>
@@ -274,6 +280,36 @@ const TASemesterManagement = ({ activeTASemester, setActiveTASemester }) => {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination */}
+          {taSemesters.length > itemsPerPage && (
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Halaman {currentPage} dari {Math.ceil(taSemesters.length / itemsPerPage)} 
+                ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, taSemesters.length)} dari {taSemesters.length})
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="chevron-left"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Sebelumnya
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="chevron-right"
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(taSemesters.length / itemsPerPage), prev + 1))}
+                  disabled={currentPage === Math.ceil(taSemesters.length / itemsPerPage)}
+                >
+                  Selanjutnya
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

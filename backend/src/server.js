@@ -1,11 +1,15 @@
 // backend/src/server.js
+// Load environment variables FIRST, before requiring anything else
+const dotenv = require('dotenv');
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv'); // Import dotenv untuk membaca .env
-const path = require('path');
-const { connectDb } = require('./config/db'); // Import fungsi koneksi DB
+const { getDb } = require('./config/db'); // Import PostgreSQL adapter
+const initializeDatabasePostgres = require('./init_db_postgres_simple'); // Import database initialization (simplified, idempotent)
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const guruRoutes = require('./routes/guruRoutes');
@@ -13,9 +17,6 @@ const excelRoutes = require('./routes/excelRoutes');
 const gradeRoutes = require('./routes/gradeRoutes');
 const kkmRoutes = require('./routes/kkmRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
-
-// Muat variabel lingkungan dari file .env
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000; // Gunakan port dari .env atau default 5000
@@ -53,7 +54,7 @@ app.use(cors(corsOptions));
 // 3. Rate Limiting - Prevent brute force attacks
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // Limit each IP to 500 requests per windowMs (development)
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 2000, // Limit each IP to 2000 requests per windowMs (development)
     message: {
         error: 'Too many requests',
         message: 'Anda telah mencapai batas request. Silakan tunggu beberapa saat sebelum mencoba lagi.',
@@ -77,7 +78,7 @@ app.use('/api', limiter);
 // Stricter rate limit for auth routes
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'production' ? 10 : 100, // 100 untuk development, 10 untuk production
+    max: process.env.NODE_ENV === 'production' ? 50 : 500, // 500 untuk development, 50 untuk production
     message: 'Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.',
     skipSuccessfulRequests: true, // Don't count successful requests
 });
@@ -85,9 +86,6 @@ const authLimiter = rateLimit({
 // 4. Body parser with size limits
 app.use(express.json({ limit: '10mb' })); // Limit request body size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Koneksi ke database saat aplikasi dimulai
-connectDb();
 
 // ===============================
 // ROUTES
@@ -187,4 +185,13 @@ function startServer(port, attempt = 0) {
     });
 }
 
-startServer(Number(PORT));
+// Initialize database then start server
+(async () => {
+    try {
+        await initializeDatabasePostgres();
+        startServer(Number(PORT));
+    } catch (error) {
+        console.error('❌ Failed to initialize database:', error);
+        process.exit(1);
+    }
+})();

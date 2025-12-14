@@ -1,5 +1,5 @@
 // frontend/src/features/admin/studentClassEnroll.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as adminApi from '../../api/admin';
 import Button from '../../components/Button';
 import Table from '../../components/Table';
@@ -26,6 +26,11 @@ const StudentClassEnroll = ({ activeTASemester }) => {
   const [isAssigning, setIsAssigning] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, student: null });
   const [isImporting, setIsImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState([]);
+  const [waitingForFile, setWaitingForFile] = useState(false);
+  const [enrolledPageCurrent, setEnrolledPageCurrent] = useState(1);
+  const [availablePageCurrent, setAvailablePageCurrent] = useState(1);
+  const itemsPerPage = 20;
 
   const fetchData = async () => {
     setLoading(true);
@@ -100,13 +105,19 @@ const StudentClassEnroll = ({ activeTASemester }) => {
   // Auto-refresh data ketika tab/window di-focus kembali
   useEffect(() => {
     const handleFocus = () => {
+      if (isImporting || waitingForFile) {
+        // Avoid auto refresh during an ongoing import (avoids confusing UI refresh)
+        console.log('Window focused but import in progress; skipping auto-refresh');
+        return;
+      }
       console.log('Window focused, refreshing data');
       fetchData();
     };
     
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  }, [isImporting, waitingForFile]);
+  
 
   const showMessage = (text, type = 'success') => {
     setMessage(text);
@@ -243,25 +254,51 @@ const StudentClassEnroll = ({ activeTASemester }) => {
     }
   };
 
+  const fileInputRef = useRef(null);
+
   const handleImportExcel = async (event) => {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
     const file = event.target.files[0];
     if (!file) return;
+    setWaitingForFile(false); // file chosen, stop waiting state
 
     setIsImporting(true);
+    showMessage('Importing file, please wait...', 'info');
     try {
+      console.log('[UI] handleImportExcel started, file:', file);
+      setImportErrors([]);
       const result = await adminApi.importEnrollment(file);
+      console.log('[UI] importEnrollment result:', result);
+      // Show main result message (success/failure summary)
       showMessage(result.message, 'success');
       
-      if (result.details && result.details.errors.length > 0) {
-        console.log('Import errors:', result.details.errors);
+      if (result.details && result.details.errors && result.details.errors.length > 0) {
+        console.warn('Import errors:', result.details.errors);
+        setImportErrors(result.details.errors);
+        // Show a more visible warning to user if some rows failed
+        showMessage(`Import completed; ${result.details.failed} failed rows. See errors below.`, 'warning');
+      }
+      else {
+        setImportErrors([]);
       }
       
       // Refresh data
       fetchStudentsInKelas(selectedKelasId, activeTASemester?.id_ta_semester);
       fetchAllStudentsInSemester(activeTASemester?.id_ta_semester);
-      event.target.value = '';
+      if (event && event.target) {
+        event.target.value = '';
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (err) {
-      showMessage('Gagal import: ' + err.message, 'error');
+      // If there are detailed errors from server, show them in the UI
+      if (err.details && Array.isArray(err.details.errors) && err.details.errors.length > 0) {
+        setImportErrors(err.details.errors);
+        showMessage(err.message || 'Gagal import: lihat detail', 'error');
+      } else {
+        showMessage('Gagal import: ' + err.message, 'error');
+      }
     } finally {
       setIsImporting(false);
     }
@@ -496,6 +533,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
                     variant="primary"
                     icon="download"
                     onClick={handleDownloadTemplate}
+                    type="button"
                     fullWidth
                   >
                     Download Template Excel
@@ -503,15 +541,23 @@ const StudentClassEnroll = ({ activeTASemester }) => {
                   <div>
                     <input
                       id="excel-upload-enrollment"
+                      ref={fileInputRef}
                       type="file"
                       accept=".xlsx, .xls"
+                      onClick={(e) => e.stopPropagation()}
                       onChange={handleImportExcel}
                       style={{ display: 'none' }}
                     />
                     <Button
                       variant="success"
                       icon="upload"
-                      onClick={() => document.getElementById('excel-upload-enrollment').click()}
+                      onClick={() => {
+                        setWaitingForFile(true);
+                        // start a fallback to clear waitingForFile if user cancels file dialog
+                        setTimeout(() => setWaitingForFile(false), 10000);
+                        fileInputRef.current && fileInputRef.current.click();
+                      }}
+                      type="button"
                       loading={isImporting}
                       disabled={isImporting}
                       fullWidth
@@ -524,6 +570,29 @@ const StudentClassEnroll = ({ activeTASemester }) => {
                   <i className="fas fa-info-circle mr-1"></i>
                   Download template, isi NISN dan Nama Kelas, lalu upload untuk enroll otomatis ke semester aktif
                 </p>
+                {importErrors && importErrors.length > 0 && (
+                  <div className="mt-3 bg-red-50 border border-red-200 rounded p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-medium text-red-800">Import Errors ({importErrors.length})</div>
+                      <div>
+                        <button
+                          className="text-sm text-red-700 underline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(importErrors.join('\n'));
+                            showMessage('Errors copied to clipboard', 'success');
+                          }}
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                    <ul className="text-xs text-red-700 max-h-40 overflow-auto list-disc list-inside">
+                      {importErrors.slice(0, 50).map((err, idx) => (
+                        <li key={`err-${idx}`}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Current Students in Class */}
@@ -539,27 +608,59 @@ const StudentClassEnroll = ({ activeTASemester }) => {
                 </div>
                 
                 {studentsInSelectedKelas.length > 0 ? (
-                  <Table
-                    columns={enrolledStudentsColumns}
-                    data={studentsInSelectedKelas}
-                    actions={(student) => {
-                      console.log('Rendering action for student:', student);
-                      return (
-                        <Button
-                          variant="danger"
-                          icon="user-minus"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log('Remove clicked for:', student);
-                            handleRemoveClick(student);
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      );
-                    }}
-                  />
+                  <div className="space-y-4">
+                    <Table
+                      columns={enrolledStudentsColumns}
+                      data={studentsInSelectedKelas.slice((enrolledPageCurrent - 1) * itemsPerPage, enrolledPageCurrent * itemsPerPage)}
+                      actions={(student) => {
+                        console.log('Rendering action for student:', student);
+                        return (
+                          <Button
+                            variant="danger"
+                            icon="user-minus"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('Remove clicked for:', student);
+                              handleRemoveClick(student);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        );
+                      }}
+                    />
+                    
+                    {/* Pagination for Enrolled Students */}
+                    {studentsInSelectedKelas.length > itemsPerPage && (
+                      <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          Halaman {enrolledPageCurrent} dari {Math.ceil(studentsInSelectedKelas.length / itemsPerPage)} 
+                          ({(enrolledPageCurrent - 1) * itemsPerPage + 1} - {Math.min(enrolledPageCurrent * itemsPerPage, studentsInSelectedKelas.length)} dari {studentsInSelectedKelas.length})
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon="chevron-left"
+                            onClick={() => setEnrolledPageCurrent(prev => Math.max(1, prev - 1))}
+                            disabled={enrolledPageCurrent === 1}
+                          >
+                            Sebelumnya
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon="chevron-right"
+                            onClick={() => setEnrolledPageCurrent(prev => Math.min(Math.ceil(studentsInSelectedKelas.length / itemsPerPage), prev + 1))}
+                            disabled={enrolledPageCurrent === Math.ceil(studentsInSelectedKelas.length / itemsPerPage)}
+                          >
+                            Selanjutnya
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <EmptyState
                     icon="user-slash"
@@ -657,15 +758,79 @@ const StudentClassEnroll = ({ activeTASemester }) => {
 
                     {/* Students Display */}
                     {viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {filteredAvailableStudents.map(student => 
-                          renderStudentCard(student, selectedStudents.includes(student.id_siswa))
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {filteredAvailableStudents.slice((availablePageCurrent - 1) * itemsPerPage, availablePageCurrent * itemsPerPage).map(student => 
+                            renderStudentCard(student, selectedStudents.includes(student.id_siswa))
+                          )}
+                        </div>
+                        
+                        {/* Pagination for Available Students */}
+                        {filteredAvailableStudents.length > itemsPerPage && (
+                          <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                            <div className="text-sm text-gray-600">
+                              Halaman {availablePageCurrent} dari {Math.ceil(filteredAvailableStudents.length / itemsPerPage)} 
+                              ({(availablePageCurrent - 1) * itemsPerPage + 1} - {Math.min(availablePageCurrent * itemsPerPage, filteredAvailableStudents.length)} dari {filteredAvailableStudents.length})
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon="chevron-left"
+                                onClick={() => setAvailablePageCurrent(prev => Math.max(1, prev - 1))}
+                                disabled={availablePageCurrent === 1}
+                              >
+                                Sebelumnya
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon="chevron-right"
+                                onClick={() => setAvailablePageCurrent(prev => Math.min(Math.ceil(filteredAvailableStudents.length / itemsPerPage), prev + 1))}
+                                disabled={availablePageCurrent === Math.ceil(filteredAvailableStudents.length / itemsPerPage)}
+                              >
+                                Selanjutnya
+                              </Button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        {filteredAvailableStudents.map(student => 
-                          renderStudentList(student, selectedStudents.includes(student.id_siswa))
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          {filteredAvailableStudents.slice((availablePageCurrent - 1) * itemsPerPage, availablePageCurrent * itemsPerPage).map(student => 
+                            renderStudentList(student, selectedStudents.includes(student.id_siswa))
+                          )}
+                        </div>
+                        
+                        {/* Pagination for Available Students */}
+                        {filteredAvailableStudents.length > itemsPerPage && (
+                          <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                            <div className="text-sm text-gray-600">
+                              Halaman {availablePageCurrent} dari {Math.ceil(filteredAvailableStudents.length / itemsPerPage)} 
+                              ({(availablePageCurrent - 1) * itemsPerPage + 1} - {Math.min(availablePageCurrent * itemsPerPage, filteredAvailableStudents.length)} dari {filteredAvailableStudents.length})
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon="chevron-left"
+                                onClick={() => setAvailablePageCurrent(prev => Math.max(1, prev - 1))}
+                                disabled={availablePageCurrent === 1}
+                              >
+                                Sebelumnya
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon="chevron-right"
+                                onClick={() => setAvailablePageCurrent(prev => Math.min(Math.ceil(filteredAvailableStudents.length / itemsPerPage), prev + 1))}
+                                disabled={availablePageCurrent === Math.ceil(filteredAvailableStudents.length / itemsPerPage)}
+                              >
+                                Selanjutnya
+                              </Button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}

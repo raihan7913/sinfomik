@@ -42,14 +42,14 @@ function initializeDatabase() {
             id_ta_semester INTEGER PRIMARY KEY AUTOINCREMENT,
             tahun_ajaran TEXT NOT NULL,
             semester TEXT NOT NULL,
-            is_aktif BOOLEAN DEFAULT 0,
+            is_aktif BOOLEAN DEFAULT false,
             UNIQUE (tahun_ajaran, semester)
         );
 
         CREATE TABLE IF NOT EXISTS Kelas (
             id_kelas INTEGER PRIMARY KEY AUTOINCREMENT,
             nama_kelas TEXT NOT NULL,
-            id_wali_kelas INTEGER,
+            id_wali_kelas TEXT,
             id_ta_semester INTEGER NOT NULL,
             FOREIGN KEY (id_wali_kelas) REFERENCES Guru(id_guru),
             FOREIGN KEY (id_ta_semester) REFERENCES TahunAjaranSemester(id_ta_semester),
@@ -80,7 +80,7 @@ function initializeDatabase() {
 
         CREATE TABLE IF NOT EXISTS GuruMataPelajaranKelas (
             id_guru_mapel_kelas INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_guru INTEGER NOT NULL,
+            id_guru TEXT NOT NULL,
             id_mapel INTEGER NOT NULL,
             id_kelas INTEGER NOT NULL,
             id_ta_semester INTEGER NOT NULL,
@@ -94,7 +94,7 @@ function initializeDatabase() {
         CREATE TABLE IF NOT EXISTS Nilai (
             id_nilai INTEGER PRIMARY KEY AUTOINCREMENT,
             id_siswa INTEGER NOT NULL,
-            id_guru INTEGER NOT NULL,
+            id_guru TEXT NOT NULL,
             id_mapel INTEGER NOT NULL,
             id_kelas INTEGER NOT NULL,
             id_ta_semester INTEGER NOT NULL,
@@ -125,7 +125,7 @@ function initializeDatabase() {
             id_siswa_cp INTEGER PRIMARY KEY AUTOINCREMENT,
             id_siswa INTEGER NOT NULL,
             id_cp INTEGER NOT NULL,
-            id_guru INTEGER NOT NULL,
+            id_guru TEXT NOT NULL,
             id_ta_semester INTEGER NOT NULL,
             status_capaian TEXT NOT NULL,
             tanggal_penilaian TEXT NOT NULL,
@@ -139,7 +139,7 @@ function initializeDatabase() {
 
         CREATE TABLE IF NOT EXISTS KKM_Settings (
             id_kkm INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_guru INTEGER NOT NULL,
+            id_guru TEXT NOT NULL,
             id_mapel INTEGER NOT NULL,
             id_kelas INTEGER NOT NULL,
             id_ta_semester INTEGER NOT NULL,
@@ -162,7 +162,7 @@ function initializeDatabase() {
             tp_name TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(id_penugasan, id_ta_semester, tp_number),
-            FOREIGN KEY (id_ta_semester) REFERENCES TahunAjaranSemester(id_ta_semester) ON DELETE CASCADE
+            FOREIGN KEY (id_ta_semester) REFERENCES tahunajaransemester(id_ta_semester) ON DELETE CASCADE
         );
     `;
 
@@ -207,29 +207,29 @@ async function insertDummyData(db) {
 
     try {
         // --- 1. Admin ---
-        const adminCount = (await getQuery("SELECT COUNT(*) AS count FROM Admin")).count;
+        const adminCount = (await getQuery("SELECT COUNT(*) AS count FROM admin")).count;
         if (adminCount === 0) {
-            await runQuery("INSERT INTO Admin (username, password_hash, nama) VALUES (?, ?, ?)",
+            await runQuery("INSERT INTO admin (username, password_hash, nama) VALUES (?, ?, ?)",
                 ['admin', hashPasswordPythonStyle('admin123'), 'Super Admin']);
             console.log("Admin dummy ditambahkan: username 'admin', password 'admin123'");
         } else { console.log("Table Admin already contains data. Skipping dummy data insertion."); }
 
         // --- 2. Guru ---
-        const guruCount = (await getQuery("SELECT COUNT(*) AS count FROM Guru")).count;
+        const guruCount = (await getQuery("SELECT COUNT(*) AS count FROM guru")).count;
         if (guruCount === 0) {
             const teachers = [
                 { username: 'budi.s', nama_guru: 'Pak Budi Santoso', email: 'budi.s@sekolah.com' },
                 { username: 'ani.w', nama_guru: 'Ibu Ani Wijaya', email: 'ani.w@sekolah.com' },
             ];
             for (const t of teachers) {
-                await runQuery("INSERT INTO Guru (username, password_hash, nama_guru, email) VALUES (?, ?, ?, ?)",
+                await runQuery("INSERT INTO guru (username, password_hash, nama_guru, email) VALUES (?, ?, ?, ?)",
                     [t.username, hashPasswordPythonStyle('guru123'), t.nama_guru, t.email]);
             }
             console.log(`${teachers.length} Guru dummy ditambahkan.`);
-        } else { console.log("Table Guru already contains data. Skipping dummy data insertion."); }
+        } else { console.log("Table guru already contains data. Skipping dummy data insertion."); }
 
         // --- 3. Siswa ---
-        const siswaCount = (await getQuery("SELECT COUNT(*) AS count FROM Siswa")).count;
+        const siswaCount = (await getQuery("SELECT COUNT(*) AS count FROM siswa")).count;
         if (siswaCount === 0) {
             const students = [
                 { id_siswa: 1001, nama_siswa: 'Andi Pratama', tanggal_lahir: '2008-03-15', jenis_kelamin: 'L', tahun_ajaran_masuk: '2023/2024' },
@@ -239,24 +239,24 @@ async function insertDummyData(db) {
                 { id_siswa: 1005, nama_siswa: 'Eko Saputra', tanggal_lahir: '2008-11-20', jenis_kelamin: 'L', tahun_ajaran_masuk: '2023/2024' },
             ];
             for (const s of students) {
-                await runQuery("INSERT INTO Siswa (id_siswa, nama_siswa, tanggal_lahir, jenis_kelamin, tahun_ajaran_masuk) VALUES (?, ?, ?, ?, ?)",
+                await runQuery("INSERT INTO siswa (id_siswa, nama_siswa, tanggal_lahir, jenis_kelamin, tahun_ajaran_masuk) VALUES (?, ?, ?, ?, ?)",
                     [s.id_siswa, s.nama_siswa, s.tanggal_lahir, s.jenis_kelamin, s.tahun_ajaran_masuk]);
             }
             console.log(`${students.length} Siswa dummy ditambahkan.`);
-        } else { console.log("Table Siswa already contains data. Skipping dummy data insertion."); }
+        } else { console.log("Table siswa already contains data. Skipping dummy data insertion."); }
 
         // --- 4. Mata Pelajaran ---
-        const mapelCount = (await getQuery("SELECT COUNT(*) AS count FROM MataPelajaran")).count;
+        const mapelCount = (await getQuery("SELECT COUNT(*) AS count FROM matapelajaran")).count;
         if (mapelCount === 0) {
             const subjects = ['Matematika', 'Fisika', 'Bahasa Indonesia'];
             for (const s of subjects) {
-                await runQuery("INSERT INTO MataPelajaran (nama_mapel) VALUES (?)", [s]);
+                await runQuery("INSERT INTO matapelajaran (nama_mapel) VALUES (?)", [s]);
             }
             console.log(`${subjects.length} Mata Pelajaran dummy ditambahkan.`);
-        } else { console.log("Table MataPelajaran already contains data. Skipping dummy data insertion."); }
+        } else { console.log("Table matapelajaran already contains data. Skipping dummy data insertion."); }
 
         // --- 5. Tipe Nilai ---
-        const tipeNilaiCount = (await getQuery("SELECT COUNT(*) AS count FROM TipeNilai")).count;
+        const tipeNilaiCount = (await getQuery("SELECT COUNT(*) AS count FROM tipenilai")).count;
         if (tipeNilaiCount === 0) {
             const gradeTypes = [
                 { nama_tipe: 'Tugas Harian', deskripsi: 'Nilai tugas-tugas harian' },
@@ -264,38 +264,38 @@ async function insertDummyData(db) {
                 { nama_tipe: 'UAS', deskripsi: 'Ujian Akhir Semester' },
             ];
             for (const gt of gradeTypes) {
-                await runQuery("INSERT INTO TipeNilai (nama_tipe, deskripsi) VALUES (?, ?)", [gt.nama_tipe, gt.deskripsi]);
+                await runQuery("INSERT INTO tipenilai (nama_tipe, deskripsi) VALUES (?, ?)", [gt.nama_tipe, gt.deskripsi]);
             }
             console.log(`${gradeTypes.length} Tipe Nilai dummy ditambahkan.`);
-        } else { console.log("Table TipeNilai already contains data. Skipping dummy data insertion."); }
+        } else { console.log("Table tipenilai already contains data. Skipping dummy data insertion."); }
 
         // --- 6. Tahun Ajaran & Semester ---
-        const taSemesterCount = (await getQuery("SELECT COUNT(*) AS count FROM TahunAjaranSemester")).count;
+        const taSemesterCount = (await getQuery("SELECT COUNT(*) AS count FROM tahunajaransemester")).count;
         let activeTASemesterId = null;
         let allTASemesters = [];
         if (taSemesterCount === 0) {
             const taSemesters = [
-                { tahun_ajaran: '2023/2024', semester: 'Ganjil', is_aktif: 0 },
-                { tahun_ajaran: '2024/2025', semester: 'Ganjil', is_aktif: 1 }, // Set this as active
+                { tahun_ajaran: '2023/2024', semester: 'Ganjil', is_aktif: false },
+                { tahun_ajaran: '2024/2025', semester: 'Ganjil', is_aktif: true }, // Set this as active
             ];
             for (const tas of taSemesters) {
-                const id = await runQuery("INSERT INTO TahunAjaranSemester (tahun_ajaran, semester, is_aktif) VALUES (?, ?, ?)",
+                const id = await runQuery("INSERT INTO tahunajaransemester (tahun_ajaran, semester, is_aktif) VALUES (?, ?, ?)",
                     [tas.tahun_ajaran, tas.semester, tas.is_aktif]);
                 if (tas.is_aktif) activeTASemesterId = id;
             }
-            allTASemesters = await allQuery("SELECT id_ta_semester, tahun_ajaran, semester FROM TahunAjaranSemester");
+            allTASemesters = await allQuery("SELECT id_ta_semester, tahun_ajaran, semester FROM tahunajaransemester");
             console.log(`${taSemesters.length} Tahun Ajaran & Semester dummy ditambahkan.`);
         } else {
-            allTASemesters = await allQuery("SELECT id_ta_semester, tahun_ajaran, semester FROM TahunAjaranSemester");
-            const activeTAS = await getQuery("SELECT id_ta_semester FROM TahunAjaranSemester WHERE is_aktif = 1");
+            allTASemesters = await allQuery("SELECT id_ta_semester, tahun_ajaran, semester FROM tahunajaransemester");
+            const activeTAS = await getQuery("SELECT id_ta_semester FROM tahunajaransemester WHERE is_aktif = true");
             if (activeTAS) activeTASemesterId = activeTAS.id_ta_semester;
-            console.log("Table TahunAjaranSemester already contains data. Skipping dummy data insertion.");
+            console.log("Table tahunajaransemester already contains data. Skipping dummy data insertion.");
         }
 
         // --- 7. Kelas ---
-        const kelasCount = (await getQuery("SELECT COUNT(*) AS count FROM Kelas")).count;
+        const kelasCount = (await getQuery("SELECT COUNT(*) AS count FROM kelas")).count;
         if (kelasCount === 0) {
-            const allTeachers = await allQuery("SELECT id_guru FROM Guru");
+            const allTeachers = await allQuery("SELECT id_guru FROM guru");
             const kelasData = [];
             const kelasNames = ['1 Darhadeh', '1 Gumujeng'];
 
@@ -308,17 +308,17 @@ async function insertDummyData(db) {
                 }
             }
             for (const k of kelasData) {
-                await runQuery("INSERT INTO Kelas (nama_kelas, id_wali_kelas, id_ta_semester) VALUES (?, ?, ?)",
+                await runQuery("INSERT INTO kelas (nama_kelas, id_wali_kelas, id_ta_semester) VALUES (?, ?, ?)",
                     [k.nama_kelas, k.id_wali_kelas, k.id_ta_semester]);
             }
             console.log(`${kelasData.length} Kelas dummy ditambahkan.`);
         } else { console.log("Table Kelas already contains data. Skipping dummy data insertion."); }
 
         // --- 8. SiswaKelas ---
-        const siswaKelasCount = (await getQuery("SELECT COUNT(*) AS count FROM SiswaKelas")).count;
+        const siswaKelasCount = (await getQuery("SELECT COUNT(*) AS count FROM siswakelas")).count;
         if (siswaKelasCount === 0) {
-            const allStudents = await allQuery("SELECT id_siswa FROM Siswa");
-            const allKelas = await allQuery("SELECT id_kelas, nama_kelas, id_ta_semester FROM Kelas");
+            const allStudents = await allQuery("SELECT id_siswa FROM siswa");
+            const allKelas = await allQuery("SELECT id_kelas, nama_kelas, id_ta_semester FROM kelas");
 
             // Assign all students to 'X A' for 2023/2024 Ganjil, and 'XI IPA 1' for 2024/2025 Ganjil
             const kelasXA_2023 = allKelas.find(k => k.nama_kelas === 'X A' && k.id_ta_semester === allTASemesters.find(t => t.tahun_ajaran === '2023/2024' && t.semester === 'Ganjil')?.id_ta_semester);

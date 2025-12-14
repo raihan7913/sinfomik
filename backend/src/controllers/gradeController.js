@@ -19,7 +19,7 @@ exports.exportGradeTemplate = async (req, res) => {
         const classInfo = await new Promise((resolve, reject) => {
             db.get(
                 `SELECT k.nama_kelas, m.nama_mapel, tas.tahun_ajaran, tas.semester
-                 FROM Kelas k, MataPelajaran m, TahunAjaranSemester tas
+                 FROM kelas k, matapelajaran m, tahunajaransemester tas
                  WHERE k.id_kelas = ? AND m.id_mapel = ? AND tas.id_ta_semester = ?`,
                 [id_kelas, id_mapel, id_ta_semester],
                 (err, row) => {
@@ -37,8 +37,8 @@ exports.exportGradeTemplate = async (req, res) => {
         const students = await new Promise((resolve, reject) => {
             db.all(
                 `SELECT s.id_siswa, s.nama_siswa
-                 FROM Siswa s
-                 INNER JOIN SiswaKelas sk ON s.id_siswa = sk.id_siswa
+                 FROM siswa s
+                 INNER JOIN siswakelas sk ON s.id_siswa = sk.id_siswa
                  WHERE sk.id_kelas = ? AND sk.id_ta_semester = ?
                  ORDER BY s.nama_siswa`,
                 [id_kelas, id_ta_semester],
@@ -66,8 +66,8 @@ exports.exportGradeTemplate = async (req, res) => {
         const cpRow = await new Promise((resolve, reject) => {
             db.get(
                 `SELECT cp.file_path, m.nama_mapel 
-                 FROM CapaianPembelajaran cp
-                 JOIN MataPelajaran m ON cp.id_mapel = m.id_mapel
+                 FROM capaianpembelajaran cp
+                 JOIN matapelajaran m ON cp.id_mapel = m.id_mapel
                  WHERE cp.id_mapel = ? AND cp.fase = ?`,
                 [id_mapel, fase],
                 (err, row) => {
@@ -415,7 +415,7 @@ exports.importGradesFromExcel = async (req, res) => {
             // Verify student exists
             const student = await new Promise((resolve, reject) => {
                 db.get(
-                    'SELECT id_siswa FROM Siswa WHERE id_siswa = ?',
+                    'SELECT id_siswa FROM siswa WHERE id_siswa = ?',
                     [idSiswa],
                     (err, row) => {
                         if (err) reject(err);
@@ -447,10 +447,10 @@ exports.importGradesFromExcel = async (req, res) => {
                     try {
                         await new Promise((resolve, reject) => {
                             db.run(
-                                `INSERT INTO Nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
-                                 VALUES (?, ?, ?, ?, ?, 'TP', ?, ?, datetime('now'), ?)
+                                `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
+                                 VALUES (?, ?, ?, ?, ?, 'TP', ?, ?, NOW(), ?)
                                  ON CONFLICT(id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp)
-                                 DO UPDATE SET nilai = excluded.nilai, tanggal_input = datetime('now')`,
+                                 DO UPDATE SET nilai = excluded.nilai, tanggal_input = NOW()`,
                                 [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, tpNum, nilai, `TP ${tpNum}`],
                                 function(err) {
                                     if (err) reject(err);
@@ -481,10 +481,10 @@ exports.importGradesFromExcel = async (req, res) => {
                 try {
                     await new Promise((resolve, reject) => {
                         db.run(
-                            `INSERT INTO Nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
-                             VALUES (?, ?, ?, ?, ?, 'UAS', NULL, ?, datetime('now'), 'UAS')
+                            `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
+                             VALUES (?, ?, ?, ?, ?, 'UAS', NULL, ?, NOW(), 'UAS')
                              ON CONFLICT(id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp)
-                             DO UPDATE SET nilai = excluded.nilai, tanggal_input = datetime('now')`,
+                             DO UPDATE SET nilai = excluded.nilai, tanggal_input = NOW()`,
                             [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, nilai],
                             function(err) {
                                 if (err) reject(err);
@@ -524,7 +524,7 @@ async function getTpListDirect(db, id_mapel, fase, id_kelas, semesterText) {
         // Get kelas info
         const kelasRow = await new Promise((resolve, reject) => {
             db.get(
-                'SELECT k.nama_kelas FROM Kelas k WHERE k.id_kelas = ?',
+                'SELECT k.nama_kelas FROM kelas k WHERE k.id_kelas = ?',
                 [id_kelas],
                 (err, row) => {
                     if (err) reject(err);
@@ -552,8 +552,8 @@ async function getTpListDirect(db, id_mapel, fase, id_kelas, semesterText) {
         const cpRow = await new Promise((resolve, reject) => {
             db.get(
                 `SELECT cp.file_path, m.nama_mapel 
-                 FROM CapaianPembelajaran cp
-                 JOIN MataPelajaran m ON cp.id_mapel = m.id_mapel
+                 FROM capaianpembelajaran cp
+                 JOIN matapelajaran m ON cp.id_mapel = m.id_mapel
                  WHERE cp.id_mapel = ? AND cp.fase = ?`,
                 [id_mapel, fase],
                 (err, row) => {
@@ -749,8 +749,8 @@ exports.exportFinalGrades = async (req, res) => {
         const students = await new Promise((resolve, reject) => {
             db.all(
                 `SELECT s.id_siswa, s.nama_siswa
-                 FROM Siswa s
-                 INNER JOIN SiswaKelas sk ON s.id_siswa = sk.id_siswa
+                 FROM siswa s
+                 INNER JOIN siswakelas sk ON s.id_siswa = sk.id_siswa
                  WHERE sk.id_kelas = ? AND sk.id_ta_semester = ?
                  ORDER BY s.nama_siswa`,
                 [id_kelas, id_ta_semester],
@@ -779,7 +779,7 @@ exports.exportFinalGrades = async (req, res) => {
         const allGrades = await new Promise((resolve, reject) => {
             db.all(
                 `SELECT id_siswa, jenis_nilai, urutan_tp, nilai
-                 FROM Nilai
+                 FROM nilai
                  WHERE id_guru = ? AND id_mapel = ? AND id_kelas = ? AND id_ta_semester = ?`,
                 [id_guru, id_mapel, id_kelas, id_ta_semester],
                 (err, rows) => {

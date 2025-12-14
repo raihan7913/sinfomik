@@ -4,6 +4,7 @@
     import LoginPage from './pages/LoginPage';
     import DashboardPage from './pages/DashboardPage';
     import PWAInstallPrompt from './components/PWAInstallPrompt';
+    import TokenExpiryWarning from './components/TokenExpiryWarning';
 
     function App() {
   // State untuk melacak status login pengguna
@@ -85,9 +86,19 @@
               )
             } />
 
-            {/* Default route: redirect ke login jika tidak ada path yang cocok */}
+          {/* Default route: redirect ke login jika tidak ada path yang cocok */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
+          
+          {/* Token Expiry Warning - show when user is logged in and token about to expire */}
+          <TokenExpiryWarning 
+            isLoggedIn={isLoggedIn}
+            onLogout={handleLogout}
+            onRefresh={() => {
+              // Optional: Implement token refresh logic here
+              // For now, this is just a placeholder for staying logged in
+            }}
+          />
           
           {/* PWA Install Prompt */}
           <PWAInstallPrompt />

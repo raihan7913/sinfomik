@@ -21,7 +21,7 @@ exports.getAllStudents = (req, res) => {
             s.tanggal_lahir,
             s.jenis_kelamin,
             s.tahun_ajaran_masuk
-        FROM Siswa s
+        FROM siswa s
         ORDER BY s.nama_siswa
     `;
 
@@ -38,7 +38,7 @@ exports.addStudent = (req, res) => {
     const { id_siswa, nama_siswa, tanggal_lahir, jenis_kelamin, tahun_ajaran_masuk } = req.body;
     const db = getDb();
 //cuma ngetes aja
-    db.run("INSERT INTO Siswa (id_siswa, nama_siswa, tanggal_lahir, jenis_kelamin, tahun_ajaran_masuk) VALUES (?, ?, ?, ?, ?)",
+    db.run("INSERT INTO siswa (id_siswa, nama_siswa, tanggal_lahir, jenis_kelamin, tahun_ajaran_masuk) VALUES (?, ?, ?, ?, ?)",
         [id_siswa, nama_siswa, tanggal_lahir || null, jenis_kelamin || null, tahun_ajaran_masuk || null],
         function(err) {
             if (err) {
@@ -56,7 +56,7 @@ exports.updateStudent = (req, res) => {
     const { id } = req.params;
     const { nama_siswa, tanggal_lahir, jenis_kelamin, tahun_ajaran_masuk } = req.body;
     const db = getDb();
-    const query = "UPDATE Siswa SET nama_siswa = ?, tanggal_lahir = ?, jenis_kelamin = ?, tahun_ajaran_masuk = ? WHERE id_siswa = ?";
+    const query = "UPDATE siswa SET nama_siswa = ?, tanggal_lahir = ?, jenis_kelamin = ?, tahun_ajaran_masuk = ? WHERE id_siswa = ?";
     const params = [nama_siswa, tanggal_lahir || null, jenis_kelamin || null, tahun_ajaran_masuk || null, id];
 
     db.run(query, params, function(err) {
@@ -70,23 +70,23 @@ exports.deleteStudent = (req, res) => {
     const { id } = req.params;
     const db = getDb();
 
-    db.get("SELECT COUNT(*) AS count FROM SiswaKelas WHERE id_siswa = ?", [id], (err, row) => {
+    db.get("SELECT COUNT(*) AS count FROM siswakelas WHERE id_siswa = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ message: err.message });
         if (row.count > 0) {
             return res.status(409).json({ message: 'Tidak dapat menghapus siswa. Siswa masih terdaftar di kelas.' });
         }
-        db.get("SELECT COUNT(*) AS count FROM Nilai WHERE id_siswa = ?", [id], (err, row) => {
+        db.get("SELECT COUNT(*) AS count FROM nilai WHERE id_siswa = ?", [id], (err, row) => {
             if (err) return res.status(500).json({ message: err.message });
             if (row.count > 0) {
                 return res.status(409).json({ message: 'Tidak dapat menghapus siswa. Siswa masih memiliki data nilai.' });
             }
-            db.get("SELECT COUNT(*) AS count FROM SiswaCapaianPembelajaran WHERE id_siswa = ?", [id], (err, row) => {
+            db.get("SELECT COUNT(*) AS count FROM siswacapaianpembelajaran WHERE id_siswa = ?", [id], (err, row) => {
                 if (err) return res.status(500).json({ message: err.message });
                 if (row.count > 0) {
                     return res.status(409).json({ message: 'Tidak dapat menghapus siswa. Siswa masih memiliki data capaian pembelajaran.' });
                 }
 
-                db.run("DELETE FROM Siswa WHERE id_siswa = ?", [id], function(err) {
+                db.run("DELETE FROM siswa WHERE id_siswa = ?", [id], function(err) {
                     if (err) return res.status(400).json({ message: err.message });
                     if (this.changes === 0) return res.status(404).json({ message: 'Siswa tidak ditemukan.' });
                     res.json({ message: 'Siswa berhasil dihapus.' });
@@ -99,7 +99,7 @@ exports.deleteStudent = (req, res) => {
 // --- Manajemen Guru ---
 exports.getAllTeachers = (req, res) => {
     const db = getDb();
-    db.all("SELECT id_guru, username, nama_guru, email FROM Guru", [], (err, rows) => {
+    db.all("SELECT id_guru, username, nama_guru, email FROM guru", [], (err, rows) => {
         if (err) {
             console.error("Error fetching teachers:", err.message);
             return res.status(500).json({ message: err.message });
@@ -121,7 +121,7 @@ exports.addTeacher = (req, res) => {
     // Convert empty email to NULL for proper UNIQUE constraint handling
     const emailValue = email && email.trim() ? email.trim() : null;
 
-    db.run("INSERT INTO Guru (id_guru, username, password_hash, nama_guru, email) VALUES (?, ?, ?, ?, ?)",
+    db.run("INSERT INTO guru (id_guru, username, password_hash, nama_guru, email) VALUES (?, ?, ?, ?, ?)",
         [id_guru, username, password_hash, nama_guru, emailValue],
         function(err) {
             if (err) {
@@ -145,12 +145,12 @@ exports.updateTeacher = (req, res) => {
     // Convert empty email to NULL for proper UNIQUE constraint handling
     const emailValue = email && email.trim() ? email.trim() : null;
     
-    let query = "UPDATE Guru SET username = ?, nama_guru = ?, email = ? WHERE id_guru = ?";
+    let query = "UPDATE guru SET username = ?, nama_guru = ?, email = ? WHERE id_guru = ?";
     let params = [username, nama_guru, emailValue, id];
 
     if (password) {
         const password_hash = hashPasswordPythonStyle(password);
-        query = "UPDATE Guru SET username = ?, nama_guru = ?, email = ?, password_hash = ? WHERE id_guru = ?";
+        query = "UPDATE guru SET username = ?, nama_guru = ?, email = ?, password_hash = ? WHERE id_guru = ?";
         params = [username, nama_guru, emailValue, password_hash, id];
     }
 
@@ -165,28 +165,28 @@ exports.deleteTeacher = (req, res) => {
     const { id } = req.params;
     const db = getDb();
 
-    db.get("SELECT COUNT(*) AS count FROM Kelas WHERE id_wali_kelas = ?", [id], (err, row) => {
+    db.get("SELECT COUNT(*) AS count FROM kelas WHERE id_wali_kelas = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ message: err.message });
         if (row.count > 0) {
             return res.status(409).json({ message: 'Tidak dapat menghapus guru. Guru masih menjadi wali kelas.' });
         }
-        db.get("SELECT COUNT(*) AS count FROM GuruMataPelajaranKelas WHERE id_guru = ?", [id], (err, row) => {
+        db.get("SELECT COUNT(*) AS count FROM gurumatapelajarankelas WHERE id_guru = ?", [id], (err, row) => {
             if (err) return res.status(500).json({ message: err.message });
             if (row.count > 0) {
                 return res.status(409).json({ message: 'Tidak dapat menghapus guru. Guru masih memiliki penugasan mengajar.' });
             }
-            db.get("SELECT COUNT(*) AS count FROM Nilai WHERE id_guru = ?", [id], (err, row) => {
+            db.get("SELECT COUNT(*) AS count FROM nilai WHERE id_guru = ?", [id], (err, row) => {
                 if (err) return res.status(500).json({ message: err.message });
                 if (row.count > 0) {
                     return res.status(409).json({ message: 'Tidak dapat menghapus guru. Guru masih memiliki data nilai yang diinput.' });
                 }
-            db.get("SELECT COUNT(*) AS count FROM SiswaCapaianPembelajaran WHERE id_guru = ?", [id], (err, row) => {
+            db.get("SELECT COUNT(*) AS count FROM siswacapaianpembelajaran WHERE id_guru = ?", [id], (err, row) => {
                 if (err) return res.status(500).json({ message: err.message });
                 if (row.count > 0) {
                     return res.status(409).json({ message: 'Tidak dapat menghapus guru. Guru masih memiliki data capaian pembelajaran yang diinput.' });
                 }
 
-                    db.run("DELETE FROM Guru WHERE id_guru = ?", [id], function(err) {
+                    db.run("DELETE FROM guru WHERE id_guru = ?", [id], function(err) {
                         if (err) return res.status(400).json({ message: err.message });
                         if (this.changes === 0) return res.status(404).json({ message: 'Guru tidak ditemukan.' });
                         res.json({ message: 'Guru berhasil dihapus.' });
@@ -206,15 +206,15 @@ exports.getTeacherDetailsForAdmin = (req, res) => {
             g.username,
             g.nama_guru,
             g.email,
-            GROUP_CONCAT(DISTINCT k_wali.nama_kelas || ' (' || tas_wali.tahun_ajaran || ' ' || tas_wali.semester || ')', '; ') AS wali_kelas_di,
-            GROUP_CONCAT(DISTINCT mp.nama_mapel || ' di ' || k_ampu.nama_kelas || ' (' || tas_ampu.tahun_ajaran || ' ' || tas_ampu.semester || ')', '; ') AS mengampu_pelajaran_di
-        FROM Guru g
-        LEFT JOIN Kelas k_wali ON g.id_guru = k_wali.id_wali_kelas
-        LEFT JOIN TahunAjaranSemester tas_wali ON k_wali.id_ta_semester = tas_wali.id_ta_semester
-        LEFT JOIN GuruMataPelajaranKelas gmpk ON g.id_guru = gmpk.id_guru
-        LEFT JOIN MataPelajaran mp ON gmpk.id_mapel = mp.id_mapel
-        LEFT JOIN Kelas k_ampu ON gmpk.id_kelas = k_ampu.id_kelas
-        LEFT JOIN TahunAjaranSemester tas_ampu ON gmpk.id_ta_semester = tas_ampu.id_ta_semester
+            STRING_AGG(DISTINCT (k_wali.nama_kelas || ' (' || tas_wali.tahun_ajaran || ' ' || tas_wali.semester || ')'), '; ') AS wali_kelas_di,
+            STRING_AGG(DISTINCT (mp.nama_mapel || ' di ' || k_ampu.nama_kelas || ' (' || tas_ampu.tahun_ajaran || ' ' || tas_ampu.semester || ')'), '; ') AS mengampu_pelajaran_di
+        FROM guru g
+        LEFT JOIN kelas k_wali ON g.id_guru = k_wali.id_wali_kelas
+        LEFT JOIN tahunajaransemester tas_wali ON k_wali.id_ta_semester = tas_wali.id_ta_semester
+        LEFT JOIN gurumatapelajarankelas gmpk ON g.id_guru = gmpk.id_guru
+        LEFT JOIN matapelajaran mp ON gmpk.id_mapel = mp.id_mapel
+        LEFT JOIN kelas k_ampu ON gmpk.id_kelas = k_ampu.id_kelas
+        LEFT JOIN tahunajaransemester tas_ampu ON gmpk.id_ta_semester = tas_ampu.id_ta_semester
         GROUP BY g.id_guru
         ORDER BY g.nama_guru;
     `;
@@ -231,7 +231,7 @@ exports.getTeacherDetailsForAdmin = (req, res) => {
 // --- Manajemen Tahun Ajaran & Semester ---
 exports.getAllTASemester = (req, res) => {
     const db = getDb();
-    db.all("SELECT * FROM TahunAjaranSemester ORDER BY tahun_ajaran DESC, semester DESC", [], (err, rows) => {
+    db.all("SELECT * FROM tahunajaransemester ORDER BY tahun_ajaran DESC, semester DESC", [], (err, rows) => {
         if (err) return res.status(500).json({ message: err.message });
         res.json(rows);
     });
@@ -251,44 +251,56 @@ exports.addTASemester = (req, res) => {
         '6 Gumilang', '6 Parigel', '6 Sonagar'
     ];
     
-    db.run("INSERT INTO TahunAjaranSemester (tahun_ajaran, semester) VALUES (?, ?)",
+    db.run("INSERT INTO tahunajaransemester (tahun_ajaran, semester) VALUES (?, ?)",
         [tahun_ajaran, semester],
         function(err) {
             if (err) {
-                if (err.message.includes('UNIQUE constraint failed')) {
+                console.error('[addTASemester] Error inserting TA:', err);
+                if (err.message.includes('UNIQUE constraint') || err.message.includes('duplicate')) {
                     return res.status(409).json({ message: 'Tahun Ajaran & Semester ini sudah ada.' });
                 }
                 return res.status(400).json({ message: err.message });
             }
             
             const id_ta_semester = this.lastID;
+            console.log('[addTASemester] TA created with ID:', id_ta_semester, 'this:', this);
             
             // Auto-create default kelas untuk semester Ganjil dan Genap
             if (semester === 'Ganjil' || semester === 'Genap') {
                 let kelasCreated = 0;
                 let kelasError = null;
+                let processedCount = 0;
+                let responseSent = false;
                 
-                defaultKelasNames.forEach((kelasName, index) => {
+                defaultKelasNames.forEach((kelasName) => {
                     db.run(
-                        "INSERT INTO Kelas (nama_kelas, id_ta_semester) VALUES (?, ?)",
+                        "INSERT INTO kelas (nama_kelas, id_ta_semester) VALUES (?, ?)",
                         [kelasName, id_ta_semester],
                         function(err) {
-                            if (err && !err.message.includes('UNIQUE constraint')) {
-                                kelasError = err;
-                            } else if (!err) {
+                            processedCount++;
+                            console.log(`[addTASemester] Kelas insert: ${kelasName}, Error:`, err?.message || 'OK');
+                            
+                            if (!err) {
                                 kelasCreated++;
+                            } else if (err && !err.message.includes('UNIQUE constraint') && !err.message.includes('duplicate')) {
+                                if (!kelasError) {
+                                    kelasError = err;
+                                }
                             }
                             
-                            // Jika semua kelas sudah diproses
-                            if (index === defaultKelasNames.length - 1) {
+                            // When all kelas processed, send response (only once)
+                            if (processedCount === defaultKelasNames.length && !responseSent) {
+                                responseSent = true;
                                 if (kelasError) {
-                                    console.error('Error creating default kelas:', kelasError);
+                                    console.error('[addTASemester] Error creating kelas:', kelasError.message);
                                     return res.status(500).json({ 
                                         message: 'Tahun Ajaran berhasil dibuat, tapi ada error saat membuat kelas default.',
+                                        error: kelasError.message,
                                         id: id_ta_semester,
                                         kelasCreated 
                                     });
                                 }
+                                
                                 res.status(201).json({ 
                                     message: `Tahun Ajaran & Semester berhasil ditambahkan. ${kelasCreated} kelas default telah dibuat.`, 
                                     id: id_ta_semester,
@@ -311,14 +323,13 @@ exports.addTASemester = (req, res) => {
 exports.setActiveTASemester = (req, res) => {
     const { id } = req.params;
     const db = getDb();
-    db.serialize(() => { // Gunakan serialize untuk memastikan operasi berurutan
-        db.run("UPDATE TahunAjaranSemester SET is_aktif = 0", [], (err) => {
+    // Update berurutan: set semua inactive, lalu set yang dipilih menjadi active
+    db.run("UPDATE tahunajaransemester SET is_aktif = ?", [false], (err) => {
+        if (err) return res.status(500).json({ message: err.message });
+        db.run("UPDATE tahunajaransemester SET is_aktif = ? WHERE id_ta_semester = ?", [true, id], function(err) {
             if (err) return res.status(500).json({ message: err.message });
-            db.run("UPDATE TahunAjaranSemester SET is_aktif = 1 WHERE id_ta_semester = ?", [id], function(err) {
-                if (err) return res.status(500).json({ message: err.message });
-                if (this.changes === 0) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
-                res.json({ message: 'Tahun Ajaran & Semester berhasil diatur sebagai aktif.' });
-            });
+            if (this.changes === 0) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
+            res.json({ message: 'Tahun Ajaran & Semester berhasil diatur sebagai aktif.' });
         });
     });
 };
@@ -327,53 +338,51 @@ exports.deleteTASemester = (req, res) => {
     const { id } = req.params;
     const db = getDb();
     
-    db.serialize(() => {
-        // Cek apakah TASemester aktif
-        db.get("SELECT is_aktif FROM TahunAjaranSemester WHERE id_ta_semester = ?", [id], (err, row) => {
+    // Cek apakah TASemester aktif
+    db.get("SELECT is_aktif FROM tahunajaransemester WHERE id_ta_semester = ?", [id], (err, row) => {
+        if (err) return res.status(500).json({ message: err.message });
+        if (!row) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
+        
+        if (row.is_aktif) {
+            return res.status(409).json({ message: 'Tidak dapat menghapus Tahun Ajaran yang sedang aktif. Silakan set semester lain sebagai aktif terlebih dahulu.' });
+        }
+        
+        // Delete semua data yang berhubungan (cascade)
+        // 1. Delete Nilai (grades)
+        db.run(`
+            DELETE FROM nilai WHERE id_ta_semester = ?
+        `, [id], (err) => {
             if (err) return res.status(500).json({ message: err.message });
-            if (!row) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
             
-            if (row.is_aktif) {
-                return res.status(409).json({ message: 'Tidak dapat menghapus Tahun Ajaran yang sedang aktif. Silakan set semester lain sebagai aktif terlebih dahulu.' });
-            }
-            
-            // Delete semua data yang berhubungan (cascade)
-            // 1. Delete Nilai (grades)
-            db.run(`
-                DELETE FROM Nilai WHERE id_ta_semester = ?
-            `, [id], (err) => {
+            // 2. Delete SiswaCapaianPembelajaran
+            db.run("DELETE FROM siswacapaianpembelajaran WHERE id_ta_semester = ?", [id], (err) => {
                 if (err) return res.status(500).json({ message: err.message });
                 
-                // 2. Delete SiswaCapaianPembelajaran
-                db.run("DELETE FROM SiswaCapaianPembelajaran WHERE id_ta_semester = ?", [id], (err) => {
+                // 3. Delete KKM_Settings
+                db.run("DELETE FROM kkm_settings WHERE id_ta_semester = ?", [id], (err) => {
                     if (err) return res.status(500).json({ message: err.message });
                     
-                    // 3. Delete KKM_Settings
-                    db.run("DELETE FROM KKM_Settings WHERE id_ta_semester = ?", [id], (err) => {
-                        if (err) return res.status(500).json({ message: err.message });
+                    // 4. Delete manual_tp (if table exists)
+                    db.run("DELETE FROM manual_tp WHERE id_ta_semester = ?", [id], (err) => {
+                        // Ignore error if table doesn't exist
                         
-                        // 4. Delete manual_tp (if table exists)
-                        db.run("DELETE FROM manual_tp WHERE id_ta_semester = ?", [id], (err) => {
-                            // Ignore error if table doesn't exist
+                        // 5. Delete GuruMataPelajaranKelas (teacher assignments)
+                        db.run("DELETE FROM gurumatapelajarankelas WHERE id_ta_semester = ?", [id], (err) => {
+                            if (err) return res.status(500).json({ message: err.message });
                             
-                            // 5. Delete GuruMataPelajaranKelas (teacher assignments)
-                            db.run("DELETE FROM GuruMataPelajaranKelas WHERE id_ta_semester = ?", [id], (err) => {
+                            // 6. Delete SiswaKelas (student class enrollments)
+                            db.run("DELETE FROM siswakelas WHERE id_ta_semester = ?", [id], (err) => {
                                 if (err) return res.status(500).json({ message: err.message });
                                 
-                                // 6. Delete SiswaKelas (student class enrollments)
-                                db.run("DELETE FROM SiswaKelas WHERE id_ta_semester = ?", [id], (err) => {
+                                // 7. Delete Kelas (classes)
+                                db.run("DELETE FROM kelas WHERE id_ta_semester = ?", [id], (err) => {
                                     if (err) return res.status(500).json({ message: err.message });
                                     
-                                    // 7. Delete Kelas (classes)
-                                    db.run("DELETE FROM Kelas WHERE id_ta_semester = ?", [id], (err) => {
+                                    // 8. Delete TahunAjaranSemester
+                                    db.run("DELETE FROM tahunajaransemester WHERE id_ta_semester = ?", [id], function(err) {
                                         if (err) return res.status(500).json({ message: err.message });
-                                        
-                                        // 8. Delete TahunAjaranSemester
-                                        db.run("DELETE FROM TahunAjaranSemester WHERE id_ta_semester = ?", [id], function(err) {
-                                            if (err) return res.status(500).json({ message: err.message });
-                                            if (this.changes === 0) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
-                                            res.json({ message: 'Tahun Ajaran & Semester dan semua data terkait berhasil dihapus.' });
-                                        });
+                                        if (this.changes === 0) return res.status(404).json({ message: 'Tahun Ajaran & Semester tidak ditemukan.' });
+                                        res.json({ message: 'Tahun Ajaran & Semester dan semua data terkait berhasil dihapus.' });
                                     });
                                 });
                             });
@@ -391,9 +400,9 @@ exports.getAllKelas = (req, res) => {
     const db = getDb();
     let query = `
         SELECT k.id_kelas, k.nama_kelas, g.nama_guru AS wali_kelas, tas.tahun_ajaran, tas.semester
-        FROM Kelas k
-        LEFT JOIN Guru g ON k.id_wali_kelas = g.id_guru
-        JOIN TahunAjaranSemester tas ON k.id_ta_semester = tas.id_ta_semester
+        FROM kelas k
+        LEFT JOIN guru g ON k.id_wali_kelas = g.id_guru
+        JOIN tahunajaransemester tas ON k.id_ta_semester = tas.id_ta_semester
     `;
     let params = [];
     if (id_ta_semester) {
@@ -411,7 +420,7 @@ exports.getAllKelas = (req, res) => {
 exports.addKelas = (req, res) => {
     const { nama_kelas, id_wali_kelas, id_ta_semester } = req.body;
     const db = getDb();
-    db.run("INSERT INTO Kelas (nama_kelas, id_wali_kelas, id_ta_semester) VALUES (?, ?, ?)",
+    db.run("INSERT INTO kelas (nama_kelas, id_wali_kelas, id_ta_semester) VALUES (?, ?, ?)",
         [nama_kelas, id_wali_kelas, id_ta_semester],
         function(err) {
             if (err) {
@@ -443,7 +452,7 @@ exports.updateKelas = (req, res) => { // Fungsi UPDATE kelas
     const db = getDb();
 
     // Update kelas data
-    db.run("UPDATE Kelas SET nama_kelas = ?, id_wali_kelas = ? WHERE id_kelas = ?",
+    db.run("UPDATE kelas SET nama_kelas = ?, id_wali_kelas = ? WHERE id_kelas = ?",
         [nama_kelas, id_wali_kelas, id],
         function(err) {
             if (err) return res.status(400).json({ message: err.message });
@@ -468,7 +477,7 @@ exports.updateKelas = (req, res) => { // Fungsi UPDATE kelas
 // Helper function to auto-assign core subjects to homeroom teacher
 function autoAssignCoreSubjects(db, id_guru, id_kelas, callback) {
     // Get current active semester
-    db.get("SELECT id_ta_semester FROM TahunAjaranSemester WHERE is_aktif = 1", [], (err, activeSemester) => {
+    db.get("SELECT id_ta_semester FROM tahunajaransemester WHERE is_aktif = ?", [true], (err, activeSemester) => {
         if (err || !activeSemester) {
             return callback(new Error('No active semester found'));
         }
@@ -483,7 +492,7 @@ function autoAssignCoreSubjects(db, id_guru, id_kelas, callback) {
 
         // Get subject IDs for core subjects
         const placeholders = coreSubjects.map(() => '?').join(',');
-        db.all(`SELECT id_mapel, nama_mapel FROM MataPelajaran WHERE nama_mapel IN (${placeholders})`, 
+        db.all(`SELECT id_mapel, nama_mapel FROM matapelajaran WHERE nama_mapel IN (${placeholders})`, 
             coreSubjects, (err, subjects) => {
             if (err) return callback(err);
 
@@ -497,7 +506,7 @@ function autoAssignCoreSubjects(db, id_guru, id_kelas, callback) {
 
             subjects.forEach(subject => {
                 // Check if assignment already exists
-                db.get(`SELECT id_guru_mapel_kelas FROM GuruMataPelajaranKelas 
+                db.get(`SELECT id_guru_mapel_kelas FROM gurumatapelajarankelas 
                         WHERE id_guru = ? AND id_mapel = ? AND id_kelas = ? AND id_ta_semester = ?`,
                     [id_guru, subject.id_mapel, id_kelas, activeSemester.id_ta_semester], (err, existing) => {
                     
@@ -508,7 +517,7 @@ function autoAssignCoreSubjects(db, id_guru, id_kelas, callback) {
 
                     // Only insert if assignment doesn't already exist
                     if (!existing) {
-                        db.run(`INSERT INTO GuruMataPelajaranKelas (id_guru, id_mapel, id_kelas, id_ta_semester) 
+                        db.run(`INSERT INTO gurumatapelajarankelas (id_guru, id_mapel, id_kelas, id_ta_semester) 
                                 VALUES (?, ?, ?, ?)`,
                             [id_guru, subject.id_mapel, id_kelas, activeSemester.id_ta_semester], (err) => {
                             completed++;
@@ -535,23 +544,23 @@ exports.deleteKelas = (req, res) => { // Fungsi DELETE kelas
     const db = getDb();
 
     // Cek ketergantungan
-    db.get("SELECT COUNT(*) AS count FROM SiswaKelas WHERE id_kelas = ?", [id], (err, row) => {
+    db.get("SELECT COUNT(*) AS count FROM siswakelas WHERE id_kelas = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ message: err.message });
         if (row.count > 0) {
             return res.status(409).json({ message: 'Tidak dapat menghapus kelas. Kelas masih memiliki siswa terdaftar.' });
         }
-        db.get("SELECT COUNT(*) AS count FROM GuruMataPelajaranKelas WHERE id_kelas = ?", [id], (err, row) => {
+        db.get("SELECT COUNT(*) AS count FROM gurumatapelajarankelas WHERE id_kelas = ?", [id], (err, row) => {
             if (err) return res.status(500).json({ message: err.message });
             if (row.count > 0) {
                 return res.status(409).json({ message: 'Tidak dapat menghapus kelas. Kelas masih memiliki penugasan guru.' });
             }
-            db.get("SELECT COUNT(*) AS count FROM Nilai WHERE id_kelas = ?", [id], (err, row) => {
+            db.get("SELECT COUNT(*) AS count FROM nilai WHERE id_kelas = ?", [id], (err, row) => {
                 if (err) return res.status(500).json({ message: err.message });
                 if (row.count > 0) {
                     return res.status(409).json({ message: 'Tidak dapat menghapus kelas. Kelas masih memiliki data nilai.' });
                 }
 
-                db.run("DELETE FROM Kelas WHERE id_kelas = ?", [id], function(err) {
+                db.run("DELETE FROM kelas WHERE id_kelas = ?", [id], function(err) {
                     if (err) return res.status(400).json({ message: err.message });
                     if (this.changes === 0) return res.status(404).json({ message: 'Kelas tidak ditemukan.' });
                     res.json({ message: 'Kelas berhasil dihapus.' });
@@ -565,7 +574,7 @@ exports.deleteKelas = (req, res) => { // Fungsi DELETE kelas
 // --- Manajemen Mata Pelajaran ---
 exports.getAllMataPelajaran = (req, res) => {
     const db = getDb();
-    db.all("SELECT * FROM MataPelajaran", [], (err, rows) => {
+    db.all("SELECT * FROM matapelajaran", [], (err, rows) => {
         if (err) return res.status(500).json({ message: err.message });
         res.json(rows);
     });
@@ -574,7 +583,7 @@ exports.getAllMataPelajaran = (req, res) => {
 exports.addMataPelajaran = (req, res) => {
     const { nama_mapel } = req.body;
     const db = getDb();
-    db.run("INSERT INTO MataPelajaran (nama_mapel) VALUES (?)",
+    db.run("INSERT INTO matapelajaran (nama_mapel) VALUES (?)",
         [nama_mapel],
         function(err) {
             if (err) {
@@ -593,7 +602,7 @@ exports.updateMataPelajaran = (req, res) => { // Fungsi UPDATE mapel
     const { nama_mapel } = req.body;
     const db = getDb();
 
-    db.run("UPDATE MataPelajaran SET nama_mapel = ? WHERE id_mapel = ?",
+    db.run("UPDATE matapelajaran SET nama_mapel = ? WHERE id_mapel = ?",
         [nama_mapel, id],
         function(err) {
             if (err) return res.status(400).json({ message: err.message });
@@ -608,12 +617,12 @@ exports.deleteMataPelajaran = (req, res) => { // Fungsi DELETE mapel
     const db = getDb();
 
     // Cek ketergantungan
-    db.get("SELECT COUNT(*) AS count FROM GuruMataPelajaranKelas WHERE id_mapel = ?", [id], (err, row) => {
+    db.get("SELECT COUNT(*) AS count FROM gurumatapelajarankelas WHERE id_mapel = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ message: err.message });
         if (row.count > 0) {
             return res.status(409).json({ message: 'Tidak dapat menghapus mata pelajaran. Masih memiliki penugasan guru.' });
         }
-        db.get("SELECT COUNT(*) AS count FROM Nilai WHERE id_mapel = ?", [id], (err, row) => {
+        db.get("SELECT COUNT(*) AS count FROM nilai WHERE id_mapel = ?", [id], (err, row) => {
             if (err) return res.status(500).json({ message: err.message });
             if (row.count > 0) {
                 return res.status(409).json({ message: 'Tidak dapat menghapus mata pelajaran. Masih memiliki data nilai.' });
@@ -717,8 +726,8 @@ exports.getSiswaInKelas = (req, res) => {
     const db = getDb();
     db.all(`
         SELECT s.id_siswa, s.nama_siswa
-        FROM SiswaKelas sk
-        JOIN Siswa s ON sk.id_siswa = s.id_siswa
+        FROM siswakelas sk
+        JOIN siswa s ON sk.id_siswa = s.id_siswa
         WHERE sk.id_kelas = ? AND sk.id_ta_semester = ?
         ORDER BY s.nama_siswa
     `, [id_kelas, id_ta_semester], (err, rows) => {
@@ -806,11 +815,11 @@ exports.getGuruMapelKelasAssignments = (req, res) => {
             tas.tahun_ajaran, 
             tas.semester,
             CASE WHEN k.id_wali_kelas = gmpk.id_guru THEN 1 ELSE 0 END as is_wali_kelas
-        FROM GuruMataPelajaranKelas gmpk
-        JOIN Guru g ON gmpk.id_guru = g.id_guru
-        JOIN MataPelajaran mp ON gmpk.id_mapel = mp.id_mapel
-        JOIN Kelas k ON gmpk.id_kelas = k.id_kelas
-        JOIN TahunAjaranSemester tas ON gmpk.id_ta_semester = tas.id_ta_semester
+        FROM gurumatapelajarankelas gmpk
+        JOIN guru g ON gmpk.id_guru = g.id_guru
+        JOIN matapelajaran mp ON gmpk.id_mapel = mp.id_mapel
+        JOIN kelas k ON gmpk.id_kelas = k.id_kelas
+        JOIN tahunajaransemester tas ON gmpk.id_ta_semester = tas.id_ta_semester
         WHERE gmpk.id_ta_semester = ?
         ORDER BY g.nama_guru, k.nama_kelas, mp.nama_mapel
     `, [id_ta_semester], (err, rows) => {
@@ -930,10 +939,10 @@ exports.updateWaliKelas = (req, res) => {
                             if (mapelList.length > 0) {
                                 mapelList.forEach((mapel) => {
                                     db.run(
-                                        `INSERT INTO GuruMataPelajaranKelas (id_guru, id_mapel, id_kelas, id_ta_semester, is_wali_kelas)
-                                         VALUES (?, ?, ?, ?, 1)
-                                         ON CONFLICT(id_guru, id_mapel, id_kelas, id_ta_semester) DO UPDATE SET is_wali_kelas = 1`,
-                                        [id_guru, mapel.id_mapel, id_kelas, kelas.id_ta_semester],
+                                        `INSERT INTO gurumatapelajarankelas (id_guru, id_mapel, id_kelas, id_ta_semester, is_wali_kelas)
+                                         VALUES (?, ?, ?, ?, ?)
+                                         ON CONFLICT(id_guru, id_mapel, id_kelas, id_ta_semester) DO UPDATE SET is_wali_kelas = ?`,
+                                        [id_guru, mapel.id_mapel, id_kelas, kelas.id_ta_semester, true, true],
                                         function(err) {
                                             assignedCount++;
                                             if (!err) {
@@ -977,8 +986,8 @@ exports.getAllCapaianPembelajaran = (req, res) => {
     const db = getDb();
     let query = `
         SELECT cp.id_cp, cp.id_mapel, cp.fase, cp.deskripsi_cp, mp.nama_mapel
-        FROM CapaianPembelajaran cp
-        JOIN MataPelajaran mp ON cp.id_mapel = mp.id_mapel
+        FROM capaianpembelajaran cp
+        JOIN matapelajaran mp ON cp.id_mapel = mp.id_mapel
     `;
     let params = [];
     if (id_mapel) {
@@ -1079,13 +1088,13 @@ exports.getAllGrades = (req, res) => { // Fungsi baru: Admin melihat semua nilai
             n.id_kelas,
             n.id_ta_semester,
             n.id_tipe_nilai
-        FROM Nilai n
-        JOIN Siswa s ON n.id_siswa = s.id_siswa
-        JOIN Guru g ON n.id_guru = g.id_guru
-        JOIN MataPelajaran mp ON n.id_mapel = mp.id_mapel
-        JOIN Kelas k ON n.id_kelas = k.id_kelas
-        JOIN TahunAjaranSemester tas ON n.id_ta_semester = tas.id_ta_semester
-        JOIN TipeNilai tn ON n.id_tipe_nilai = tn.id_tipe_nilai
+        FROM nilai n
+        JOIN siswa s ON n.id_siswa = s.id_siswa
+        JOIN guru g ON n.id_guru = g.id_guru
+        JOIN matapelajaran mp ON n.id_mapel = mp.id_mapel
+        JOIN kelas k ON n.id_kelas = k.id_kelas
+        JOIN tahunajaransemester tas ON n.id_ta_semester = tas.id_ta_semester
+        JOIN tipenilai tn ON n.id_tipe_nilai = tn.id_tipe_nilai
         ORDER BY tas.tahun_ajaran DESC, tas.semester DESC, k.nama_kelas, s.nama_siswa, mp.nama_mapel, tn.nama_tipe
     `;
     db.all(query, [], (err, rows) => {
