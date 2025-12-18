@@ -19,6 +19,7 @@ const createTablesSQL = [
         username TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
         nama TEXT NOT NULL,
+        role TEXT DEFAULT 'admin',
         last_login_timestamp BIGINT
     );`,
     
@@ -28,6 +29,7 @@ const createTablesSQL = [
         password_hash TEXT NOT NULL,
         nama_guru TEXT NOT NULL,
         email TEXT UNIQUE,
+        is_admin BOOLEAN DEFAULT FALSE,
         last_login_timestamp BIGINT
     );`,
     
@@ -215,6 +217,17 @@ async function initDb() {
         }
 
         console.log('\n✅ All tables created successfully!');
+
+        // Run idempotent schema migrations for existing databases
+        try {
+            await pool.query(`ALTER TABLE Admin ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'admin'`);
+            await pool.query(`ALTER TABLE Guru ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`);
+            console.log('✅ Schema migrations applied (role/is_admin)');
+            // Ensure initial admin has superadmin role
+            await pool.query(`UPDATE Admin SET role = 'superadmin' WHERE username = $1`, ['admin']);
+        } catch (migrationErr) {
+            console.warn('⚠️ Schema migration warning:', migrationErr.message);
+        }
         
         // Seed minimal data for testing
         console.log('\n📦 Seeding test data...');
@@ -226,19 +239,24 @@ async function initDb() {
         
         try {
             await pool.query(
-                `INSERT INTO Admin (username, password_hash, nama, last_login_timestamp) 
-                 VALUES ($1, $2, $3, NULL)
+                `INSERT INTO Admin (username, password_hash, nama, role, last_login_timestamp) 
+                 VALUES ($1, $2, $3, $4, NULL)
                  ON CONFLICT (username) DO NOTHING`,
-                ['admin', adminPasswordHash, 'Administrator']
+                ['admin', adminPasswordHash, 'Administrator', 'superadmin']
             );
             console.log('✅ Test admin user created: username=admin, password=admin123');
+            // Ensure role is enforced for existing deployments where admin user already exists
+            try {
+                await pool.query(`UPDATE Admin SET role = 'superadmin' WHERE username = $1`, ['admin']);
+                console.log("✅ Ensured 'admin' user has role = superadmin");
+            } catch (updateErr) {
+                console.warn("⚠️ Could not enforce admin role:", updateErr.message);
+            }
         } catch (err) {
             if (!err.message.includes('UNIQUE constraint')) {
                 console.error('❌ Error seeding admin:', err.message);
             }
         }
-        
-        // Create test guru user
         const guruPassword = 'guru123';
         const guruPasswordHash = createHash('sha256').update(guruPassword).digest('hex');
         

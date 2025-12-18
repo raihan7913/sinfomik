@@ -22,6 +22,7 @@ export const loginUser = async (username, password, userType) => {
       if (data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('isSuperAdmin', (data.user && data.user.role === 'superadmin') ? 'true' : 'false');
         console.log('✅ Token stored successfully');
       }
       

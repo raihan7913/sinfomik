@@ -99,12 +99,15 @@ exports.deleteStudent = (req, res) => {
 // --- Manajemen Guru ---
 exports.getAllTeachers = (req, res) => {
     const db = getDb();
-    db.all("SELECT id_guru, username, nama_guru, email FROM guru", [], (err, rows) => {
+    // Use CASE WHEN to normalize is_admin across Postgres (boolean) and SQLite (integer)
+    db.all("SELECT id_guru, username, nama_guru, email, CASE WHEN is_admin THEN 1 ELSE 0 END AS is_admin FROM guru", [], (err, rows) => {
         if (err) {
             console.error("Error fetching teachers:", err.message);
             return res.status(500).json({ message: err.message });
         }
-        res.json(rows);
+        // Normalize is_admin to boolean
+        const normalized = rows.map(r => ({ ...r, is_admin: !!r.is_admin }));
+        res.json(normalized);
     });
 };
 
@@ -206,6 +209,8 @@ exports.getTeacherDetailsForAdmin = (req, res) => {
             g.username,
             g.nama_guru,
             g.email,
+            -- Normalize is_admin to integer 0/1 using CASE to be compatible with both Postgres (boolean) and SQLite (integer)
+            CASE WHEN g.is_admin THEN 1 ELSE 0 END AS is_admin,
             STRING_AGG(DISTINCT (k_wali.nama_kelas || ' (' || tas_wali.tahun_ajaran || ' ' || tas_wali.semester || ')'), '; ') AS wali_kelas_di,
             STRING_AGG(DISTINCT (mp.nama_mapel || ' di ' || k_ampu.nama_kelas || ' (' || tas_ampu.tahun_ajaran || ' ' || tas_ampu.semester || ')'), '; ') AS mengampu_pelajaran_di
         FROM guru g
@@ -223,10 +228,28 @@ exports.getTeacherDetailsForAdmin = (req, res) => {
             console.error("Error fetching teacher details for admin:", err.message);
             return res.status(500).json({ message: err.message });
         }
-        res.json(rows);
+        const normalized = rows.map(r => ({ ...r, is_admin: !!r.is_admin }));
+        res.json(normalized);
     });
 };
 
+
+// Superadmin-only: Promote/Demote Guru to Admin
+exports.setGuruAdminStatus = (req, res) => {
+    const { id } = req.params;
+    const { is_admin } = req.body;
+    const db = getDb();
+
+    db.get("SELECT id_guru, nama_guru FROM Guru WHERE id_guru = ?", [id], (err, guru) => {
+        if (err) return res.status(500).json({ message: err.message });
+        if (!guru) return res.status(404).json({ message: 'Guru tidak ditemukan.' });
+
+        db.run("UPDATE Guru SET is_admin = ? WHERE id_guru = ?", [is_admin ? 1 : 0, id], function(err) {
+            if (err) return res.status(500).json({ message: err.message });
+            res.json({ message: `Guru ${is_admin ? 'diberi' : 'dicabut'} akses admin.`, id: id });
+        });
+    });
+};
 
 // --- Manajemen Tahun Ajaran & Semester ---
 exports.getAllTASemester = (req, res) => {

@@ -171,7 +171,7 @@ const EditTeacherModal = ({ teacher, onClose, onSave }) => {
 };
 
 // Main Component
-const GuruManagement = () => {
+const GuruManagement = ({ isSuperAdmin = false }) => {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -247,6 +247,16 @@ const GuruManagement = () => {
   const handleEditClick = (teacher) => {
     setSelectedTeacher(teacher);
     setShowEditModal(true);
+  };
+
+  const toggleAdmin = async (teacher) => {
+    try {
+      const response = await adminApi.setGuruAdminStatus(teacher.id_guru, !teacher.is_admin);
+      showMessage(response.message);
+      fetchTeachers();
+    } catch (err) {
+      showMessage(err.message || 'Gagal mengubah status admin', 'error');
+    }
   };
 
   const handleDeleteClick = (teacher) => {
@@ -402,6 +412,16 @@ const GuruManagement = () => {
                   render: (value) => (
                     <span className="text-gray-700">{value || '-'}</span>
                   )
+                },
+                {
+                  key: 'is_admin',
+                  label: 'Admin',
+                  sortable: true,
+                  render: (value) => (
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                      {value ? 'Yes' : 'No'}
+                    </span>
+                  )
                 }
               ]}
               data={teachers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
@@ -416,6 +436,18 @@ const GuruManagement = () => {
                   >
                     Edit
                   </Button>
+
+                  {/* Promote/Demote button visible only to superadmin */}
+                  {isSuperAdmin && (
+                    <Button
+                      variant={teacher.is_admin ? 'warning' : 'success'}
+                      size="sm"
+                      onClick={() => toggleAdmin(teacher)}
+                    >
+                      {teacher.is_admin ? 'Revoke Admin' : 'Make Admin'}
+                    </Button>
+                  )}
+
                   <Button
                     variant="danger"
                     size="sm"

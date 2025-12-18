@@ -18,6 +18,7 @@ function initializeDatabase() {
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
             nama TEXT NOT NULL,
+            role TEXT DEFAULT 'admin',
             last_login_timestamp INTEGER
         );
 
@@ -27,6 +28,7 @@ function initializeDatabase() {
             password_hash TEXT NOT NULL,
             nama_guru TEXT NOT NULL,
             email TEXT UNIQUE,
+            is_admin INTEGER DEFAULT 0,
             last_login_timestamp INTEGER
         );
 
@@ -171,6 +173,14 @@ function initializeDatabase() {
             console.error("Error creating tables:", err.message);
         } else {
             console.log("Tables created successfully or already exist.");
+            // Apply safe ALTER TABLE migrations for sqlite (ignore errors if columns exist)
+            try {
+                db.run("ALTER TABLE Admin ADD COLUMN role TEXT DEFAULT 'admin'");
+            } catch (e) { /* ignore - column may already exist */ }
+            try {
+                db.run("ALTER TABLE Guru ADD COLUMN is_admin INTEGER DEFAULT 0");
+            } catch (e) { /* ignore - column may already exist */ }
+
             insertDummyData(db); // Panggil fungsi insert dummy data setelah tabel dibuat
         }
     });
@@ -209,9 +219,9 @@ async function insertDummyData(db) {
         // --- 1. Admin ---
         const adminCount = (await getQuery("SELECT COUNT(*) AS count FROM admin")).count;
         if (adminCount === 0) {
-            await runQuery("INSERT INTO admin (username, password_hash, nama) VALUES (?, ?, ?)",
-                ['admin', hashPasswordPythonStyle('admin123'), 'Super Admin']);
-            console.log("Admin dummy ditambahkan: username 'admin', password 'admin123'");
+            await runQuery("INSERT INTO admin (username, password_hash, nama, role) VALUES (?, ?, ?, ?)",
+                ['admin', hashPasswordPythonStyle('admin123'), 'Super Admin', 'superadmin']);
+            console.log("Admin dummy ditambahkan: username 'admin', password 'admin123' (role=superadmin)");
         } else { console.log("Table Admin already contains data. Skipping dummy data insertion."); }
 
         // --- 2. Guru ---

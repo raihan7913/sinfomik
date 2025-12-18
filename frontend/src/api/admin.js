@@ -157,6 +157,15 @@ export const deleteTeacher = async (id_guru) => {
   });
 };
 
+// --- Promote / Demote Guru to Admin (Superadmin only) ---
+export const setGuruAdminStatus = async (id_guru, is_admin) => {
+  return fetchData(`${API_BASE_URL}/api/admin/teachers/${id_guru}/set-admin`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_admin }),
+  });
+};
+
 // --- API untuk Kelas ---
 export const getKelas = async (id_ta_semester = '') => {
   const url = id_ta_semester ? `${API_BASE_URL}/api/admin/kelas?id_ta_semester=${id_ta_semester}` : `${API_BASE_URL}/api/admin/kelas`;

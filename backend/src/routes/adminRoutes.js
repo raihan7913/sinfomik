@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
+const { verifyToken, isAdmin, isSuperAdmin } = require('../middlewares/authMiddleware');
 
 // Apply auth middleware to all admin routes
 router.use(verifyToken);
@@ -39,6 +39,9 @@ router.get('/teachers', adminController.getAllTeachers);
 router.post('/teachers', adminController.addTeacher);
 router.put('/teachers/:id', adminController.updateTeacher); // Endpoint UPDATE guru
 router.delete('/teachers/:id', adminController.deleteTeacher); // Endpoint DELETE guru
+
+// Superadmin-only endpoint to promote/demote guru to admin
+router.put('/teachers/:id/set-admin', isSuperAdmin, adminController.setGuruAdminStatus); // Set is_admin flag on Guru
 
 router.post('/siswa-kelas', adminController.assignSiswaToKelas);
 router.get('/siswa-in-kelas/:id_kelas/:id_ta_semester', adminController.getSiswaInKelas); // Mengambil siswa di kelas tertentu

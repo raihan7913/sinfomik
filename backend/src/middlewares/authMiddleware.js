@@ -20,16 +20,18 @@ exports.verifyToken = (req, res, next) => {
     try {
         // Verify token
         const decoded = jwt.verify(token, JWT_SECRET);
-        console.log(`[SESSION] Token decoded - User: ${decoded.id}, Type: ${decoded.user_type}, Token IAT: ${decoded.iat}`);
+        console.log(`[SESSION] Token decoded - User: ${decoded.id}, Type: ${decoded.user_type}, AuthSource: ${decoded.auth_source || 'N/A'}, AuthID: ${decoded.auth_id || 'N/A'}, Token IAT: ${decoded.iat}`);
         
         // Validate single session: check if this token is still the latest session
         const db = getDb();
-        const tableName = decoded.user_type === 'admin' ? 'Admin' : 'Guru';
-        const idField = decoded.user_type === 'admin' ? 'id_admin' : 'id_guru';
+        // Determine which DB table to check for last_login_timestamp. Tokens coming from a Guru promoted to Admin include auth_source='Guru'
+        const tableName = decoded.auth_source || (decoded.user_type === 'admin' ? 'Admin' : 'Guru');
+        const idField = tableName === 'Admin' ? 'id_admin' : 'id_guru';
+        const idToLookup = decoded.auth_id || decoded.id;
         
         db.get(
             `SELECT last_login_timestamp FROM ${tableName} WHERE ${idField} = ?`,
-            [decoded.id],
+            [idToLookup],
             (err, row) => {
                 if (err) {
                     console.error('Session validation error:', err);
@@ -44,7 +46,10 @@ exports.verifyToken = (req, res, next) => {
                     req.user = {
                         id: decoded.id,
                         user_type: decoded.user_type,
-                        nama: decoded.nama
+                        nama: decoded.nama,
+                        role: decoded.role || null,
+                        auth_source: decoded.auth_source || (decoded.user_type === 'admin' ? 'Admin' : 'Guru'),
+                        auth_id: decoded.auth_id || decoded.id
                     };
                     return next();
                 }
@@ -67,7 +72,10 @@ exports.verifyToken = (req, res, next) => {
                 req.user = {
                     id: decoded.id,
                     user_type: decoded.user_type,
-                    nama: decoded.nama
+                    nama: decoded.nama,
+                    role: decoded.role || null,
+                    auth_source: decoded.auth_source || (decoded.user_type === 'admin' ? 'Admin' : 'Guru'),
+                    auth_id: decoded.auth_id || decoded.id
                 };
                 next();
             }
@@ -118,5 +126,14 @@ exports.isAdminOrGuru = (req, res, next) => {
         return res.status(403).json({ 
             message: 'Access denied. Admin or Guru privileges required.' 
         });
+    }
+};
+
+// Middleware to check if user is superadmin
+exports.isSuperAdmin = (req, res, next) => {
+    if (req.user && req.user.user_type === 'admin' && req.user.role === 'superadmin') {
+        next();
+    } else {
+        return res.status(403).json({ message: 'Access denied. Superadmin privileges required.' });
     }
 };

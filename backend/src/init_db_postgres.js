@@ -24,6 +24,7 @@ async function initializeDatabasePostgres() {
                 username TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
                 nama TEXT NOT NULL,
+                role TEXT DEFAULT 'admin',
                 last_login_timestamp BIGINT
             );
 
@@ -34,6 +35,7 @@ async function initializeDatabasePostgres() {
                 password_hash TEXT NOT NULL,
                 nama_guru TEXT NOT NULL,
                 email TEXT UNIQUE,
+                is_admin BOOLEAN DEFAULT FALSE,
                 last_login_timestamp BIGINT
             );
 
@@ -229,6 +231,16 @@ async function initializeDatabasePostgres() {
         }
 
         console.log('✅ All tables created successfully');
+
+        // Run idempotent schema migrations (add role/is_admin if missing)
+        try {
+            await pool.query("ALTER TABLE admin ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'admin'");
+            await pool.query("ALTER TABLE guru ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE");
+            await pool.query("UPDATE admin SET role = 'superadmin' WHERE username = $1", ['admin']);
+            console.log('✅ Schema migrations applied (role/is_admin)');
+        } catch (migErr) {
+            console.warn('⚠️ Schema migration warning:', migErr.message);
+        }
 
         // Seed complete dummy data (like SQLite)
         await seedDummyData(pool);

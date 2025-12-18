@@ -42,7 +42,9 @@ function LoginPage({ onLogin }) {
         setMessageType('success');
         // Panggil fungsi onLogin dari App.js untuk memperbarui state login
         // PASTIKAN respons.user.id DIKIRIMKAN KE onLogin
-        onLogin(response.user.type, response.user.username, response.user.id);
+        // Save isSuperAdmin in localStorage and pass role info to App
+        localStorage.setItem('isSuperAdmin', response.user && response.user.role === 'superadmin' ? 'true' : 'false');
+        onLogin(response.user.type, response.user.username, response.user.id, response.user.role);
         // Navigasi akan ditangani oleh App.js melalui Navigate component
       } else {
         setMessage(response.message);

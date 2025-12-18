@@ -23,7 +23,7 @@ import ChangePassword from '../features/guru/changePassword';
 import * as adminApi from '../api/admin';
 import * as guruApi from '../api/guru';
 
-function DashboardPage({ userRole, username, userId, onLogout }) {
+function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
     const [activeMenuItem, setActiveMenuItem] = useState('');
     const [activeTASemester, setActiveTASemester] = useState(null);
     const [loadingTAS, setLoadingTAS] = useState(true);
@@ -128,12 +128,18 @@ function DashboardPage({ userRole, username, userId, onLogout }) {
     ];
 
     useEffect(() => {
+        // Choose initial menu item based on role and superadmin flag (avoid showing hidden items to non-superadmin admins)
         let initialKey = '';
-        if (userRole === 'admin') initialKey = adminMenuItems[0]?.key;
-        else if (userRole === 'guru') initialKey = guruMenuItems[0]?.key;
-        else if (userRole === 'siswa') initialKey = siswaMenuItems[0]?.key;
+        if (userRole === 'admin') {
+            const visible = isSuperAdmin ? adminMenuItems : adminMenuItems.filter(item => ['analytics','manajemen-cp'].includes(item.key));
+            initialKey = visible[0]?.key || '';
+        } else if (userRole === 'guru') {
+            initialKey = guruMenuItems[0]?.key;
+        } else if (userRole === 'siswa') {
+            initialKey = siswaMenuItems[0]?.key;
+        }
         setActiveMenuItem(initialKey);
-    }, [userRole]);
+    }, [userRole, isSuperAdmin]);
 
     const handleMenuClick = (menuKey) => {
         setActiveMenuItem(menuKey);
@@ -142,28 +148,35 @@ function DashboardPage({ userRole, username, userId, onLogout }) {
             setSidebarOpen(false);
         }
     };    const renderContentComponent = () => {
-        const allItems = [...adminMenuItems, ...guruMenuItems, ...siswaMenuItems];
-        const selectedItem = allItems.find(item => item.key === activeMenuItem);
+        // Determine visible items for the current user (same logic as sidebar)
+        const visibleItems = userRole === 'admin' ? (isSuperAdmin ? adminMenuItems : adminMenuItems.filter(item => ['analytics','manajemen-cp'].includes(item.key))) : userRole === 'guru' ? guruMenuItems : siswaMenuItems;
+
+        // Find selected item among visible items; fall back to first visible item if needed
+        let selectedItem = visibleItems.find(item => item.key === activeMenuItem);
+        if (!selectedItem && visibleItems.length > 0) selectedItem = visibleItems[0];
+
         const ActiveComponent = selectedItem ? selectedItem.component : null;
 
         if (!ActiveComponent) {
             return <p>Pilih menu di sidebar.</p>;
         }
 
-        let componentProps = { userId };
+        let componentProps = { userId, isSuperAdmin };
         if (activeTASemester) {
             componentProps.activeTASemester = activeTASemester;
         }
         
         // Khusus untuk TASemester component, tambahkan setActiveTASemester
-        if (activeMenuItem === 'ta-semester') {
+        if (selectedItem.key === 'ta-semester') {
             componentProps.setActiveTASemester = setActiveTASemester;
         }
 
         return <ActiveComponent {...componentProps} />;
     };
 
-    const menuItems = userRole === 'admin' ? adminMenuItems : userRole === 'guru' ? guruMenuItems : siswaMenuItems;
+    // If user is admin but NOT superadmin, show limited admin menu (only analytics & CP)
+    const adminVisibleItems = isSuperAdmin ? adminMenuItems : adminMenuItems.filter(item => ['analytics','manajemen-cp'].includes(item.key));
+    const menuItems = userRole === 'admin' ? adminVisibleItems : userRole === 'guru' ? guruMenuItems : siswaMenuItems;
 
     return (
         <div className="dashboard-container">

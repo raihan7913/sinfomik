@@ -11,33 +11,40 @@
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null); // 'admin', 'guru'
   const [username, setUsername] = useState(null); // Nama pengguna yang login
-  const [userId, setUserId] = useState(null); // ID pengguna yang login      // Efek untuk memeriksa status login dari localStorage (jika ada)
+  const [userId, setUserId] = useState(null); // ID pengguna yang login
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+      // Efek untuk memeriksa status login dari localStorage (jika ada)
       useEffect(() => {
         const storedLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
         const storedUserRole = localStorage.getItem('userRole');
         const storedUsername = localStorage.getItem('username');
         const storedUserId = localStorage.getItem('userId'); // Ambil userId dari localStorage
+        const storedIsSuper = localStorage.getItem('isSuperAdmin') === 'true';
 
         if (storedLoggedIn && storedUserRole && storedUsername && storedUserId) {
           setIsLoggedIn(storedLoggedIn);
           setUserRole(storedUserRole);
           setUsername(storedUsername);
           setUserId(storedUserId); // Set userId
+          setIsSuperAdmin(storedIsSuper);
         }
       }, []);
 
       // Fungsi untuk menangani login
-      // Tambahkan parameter 'id' untuk userId
-      const handleLogin = (role, name, id) => {
+      // Tambahkan parameter 'id' untuk userId and roleName for superadmin flag
+      const handleLogin = (role, name, id, roleName) => {
         setIsLoggedIn(true);
         setUserRole(role);
         setUsername(name);
         setUserId(id); // Set userId di state
+        setIsSuperAdmin(roleName === 'superadmin');
         // Simpan status login di localStorage
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userRole', role);
         localStorage.setItem('username', name);
         localStorage.setItem('userId', id); // Simpan userId di localStorage
+        localStorage.setItem('isSuperAdmin', roleName === 'superadmin' ? 'true' : 'false');
       };
 
       // Fungsi untuk menangani logout
@@ -70,7 +77,7 @@
             {/* Route untuk dashboard Admin */}
             <Route path="/admin-dashboard" element={
               isLoggedIn && userRole === 'admin' ? (
-                <DashboardPage userRole={userRole} username={username} userId={userId} onLogout={handleLogout} />
+                <DashboardPage userRole={userRole} username={username} userId={userId} isSuperAdmin={isSuperAdmin} onLogout={handleLogout} />
               ) : (
                 // Jika tidak login atau bukan admin, redirect ke login
                 <Navigate to="/login" replace />
