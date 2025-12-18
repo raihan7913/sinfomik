@@ -171,6 +171,9 @@ exports.getStudentAnalytics = async (req, res) => {
         }
 
         // Get historical grades
+        // Select aggregated stats per (mapel, semester, kelas) for the student.
+        // Note: do NOT include non-aggregated columns such as n.jenis_nilai or n.urutan_tp
+        // to avoid GROUP BY errors in PostgreSQL.
         let query = `
             SELECT 
                 s.id_siswa,
@@ -181,8 +184,6 @@ exports.getStudentAnalytics = async (req, res) => {
                 tas.tahun_ajaran,
                 tas.semester,
                 k.nama_kelas,
-                n.jenis_nilai,
-                n.urutan_tp,
                 ROUND(AVG(CASE WHEN n.jenis_nilai = 'TP' THEN n.nilai END)::NUMERIC, 2) as rata_tp,
                 MAX(CASE WHEN n.jenis_nilai = 'UAS' THEN n.nilai END) as nilai_uas,
                 ROUND(AVG(n.nilai)::NUMERIC, 2) as rata_keseluruhan,
@@ -202,8 +203,10 @@ exports.getStudentAnalytics = async (req, res) => {
             params.push(id_mapel);
         }
 
+        // Group by student, subject, semester and class only — do NOT group by jenis_nilai or urutan_tp
+        // so that TP averages aggregate across TP numbers and we get one row per (mapel, semester).
         query += `
-            GROUP BY s.id_siswa, s.nama_siswa, m.id_mapel, m.nama_mapel, tas.id_ta_semester, tas.tahun_ajaran, tas.semester, k.id_kelas, k.nama_kelas, n.jenis_nilai, n.urutan_tp
+            GROUP BY s.id_siswa, s.nama_siswa, m.id_mapel, m.nama_mapel, tas.id_ta_semester, tas.tahun_ajaran, tas.semester, k.id_kelas, k.nama_kelas
             ORDER BY tas.tahun_ajaran, tas.semester, m.nama_mapel
         `;
 

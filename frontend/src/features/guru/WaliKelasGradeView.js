@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
-  LineChart, Line,
+  LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
 import * as guruApi from '../../api/guru';
 import { fetchStudentAnalytics } from '../../api/analytics';
@@ -302,7 +302,29 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
 
   const allSubjectNames = Array.from(processedData.gradesPerSubjectTable.keys()).sort();
 
-  const totalStudents = processedData.summaryTableData.length;
+  // Prepare student history chart data so each period contains values for all mapel (fill missing with null)
+  const studentHistoryMapels = studentHistory && studentHistory.data ? Array.from(new Set(studentHistory.data.map(d => d.nama_mapel))) : [];
+  const studentHistoryChartData = studentHistory && studentHistory.data ? (() => {
+    const grouped = {};
+    studentHistory.data.forEach(item => {
+      const periodStr = `${item.tahun_ajaran} ${item.semester}`;
+      if (!grouped[periodStr]) grouped[periodStr] = { period: periodStr };
+      grouped[periodStr][item.nama_mapel] = parseFloat(item.rata_keseluruhan || 0);
+    });
+    return Object.keys(grouped).sort().map(period => {
+      const obj = grouped[period];
+      studentHistoryMapels.forEach(m => { if (!(m in obj)) obj[m] = null; });
+      return obj;
+    });
+  })() : [];
+
+  // Radar chart data: current semester averages for selected student
+  const radarData = selectedStudent ? allSubjectNames.map(subject => ({
+    subject,
+    value: selectedStudent[`${subject}_RataRata`] !== null && selectedStudent[`${subject}_RataRata`] !== undefined ? selectedStudent[`${subject}_RataRata`] : 0,
+  })) : [];
+
+  const totalStudents = processedData.summaryTableData.length; 
   const avgClassGrade = totalStudents > 0 
     ? (processedData.summaryTableData.reduce((sum, s) => sum + s.overall_final_average, 0) / totalStudents).toFixed(2)
     : 0;
@@ -752,33 +774,54 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
           </div>
 
           {studentHistory && studentHistory.data && studentHistory.data.length > 0 && (
-            <div className="mb-6 p-4 bg-white border rounded-lg shadow">
-              <h4 className="font-semibold text-gray-700 mb-4">
-                <i className="fas fa-chart-line mr-2"></i>
-                Histori Nilai Siswa (Multi-Semester)
-              </h4>
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={studentHistory.data.map(item => ({
-                  period: `${item.tahun_ajaran} ${item.semester}`,
-                  [item.nama_mapel]: parseFloat(item.rata_keseluruhan || 0)
-                }))}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" angle={-15} textAnchor="end" height={80} />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  {Array.from(new Set(studentHistory.data.map(d => d.nama_mapel))).map((mapel, idx) => (
-                    <Line
-                      key={idx}
-                      type="monotone"
-                      dataKey={mapel}
-                      stroke={COLORS[idx % COLORS.length]}
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
+            <div>
+              <div className="mb-6 p-4 bg-white border rounded-lg shadow">
+                <h4 className="font-semibold text-gray-700 mb-4">
+                  <i className="fas fa-chart-line mr-2"></i>
+                  Histori Nilai Siswa (Multi-Semester)
+                </h4>
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={studentHistoryChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" angle={-25} textAnchor="end" height={100} interval={0} />
+                    <YAxis domain={[0, 100]} />
+                    <Tooltip />
+                    <Legend />
+                    {studentHistoryMapels.map((mapel, idx) => (
+                      <Line
+                        key={idx}
+                        type="monotone"
+                        dataKey={mapel}
+                        stroke={COLORS[idx % COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        connectNulls={true}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-6 p-4 bg-white border rounded-lg shadow">
+                <h4 className="font-semibold text-gray-700 mb-4 flex items-center">
+                  <i className="fas fa-network-wired mr-2"></i>
+                  Profil Mata Pelajaran (Radar)
+                </h4>
+                {allSubjectNames.length === 0 ? (
+                  <div className="text-sm text-gray-600">Belum ada mata pelajaran untuk ditampilkan.</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={350}>
+                    <RadarChart cx="50%" cy="50%" outerRadius={120} data={radarData}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="subject" />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar name={selectedStudent.nama_siswa} dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                      <Tooltip />
+                      <Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </div>
           )}
 
