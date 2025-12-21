@@ -270,7 +270,7 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
             <div className="p-4 flex-1 flex flex-col justify-between">
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Subjects ({group.subjects.length})</p>
+                  <p className="text-sm text-gray-500 mb-2">Mata Pelajaran ({group.subjects.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {group.subjects.map((subject, idx) => (
                       <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
@@ -281,7 +281,7 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Classes ({group.classes.length})</p>
+                  <p className="text-sm text-gray-500 mb-2">Kelas ({group.classes.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {group.classes.map((kelas, idx) => (
                       <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
@@ -559,7 +559,7 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
                   <h3 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center">
                     <i className="fas fa-list-check mr-3 text-emerald-500 text-2xl sm:text-3xl"></i>
-                    Teacher Assignments
+                    Penugasan Guru
                   </h3>
                   
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -692,7 +692,7 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
                             )}
                           </div>
                           <p className="text-gray-500 text-sm">{classData.tahun_ajaran} - {classData.semester}</p>
-                          <p className="text-gray-400 text-xs">{classData.subjects.length} subject{classData.subjects.length > 1 ? 's' : ''}</p>
+                          <p className="text-gray-400 text-xs">{classData.subjects.length} Mata Pelajaran{classData.subjects.length > 1 ? 's' : ''}</p>
                         </div>
                       </div>
                     </div>
@@ -730,7 +730,7 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
               <div className="mt-6 bg-gradient-to-r from-emerald-50 to-cyan-50 rounded-xl p-4 border border-emerald-200">
                 <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                   <i className="fas fa-chart-bar mr-2 text-emerald-500"></i>
-                  Teaching Summary
+                  Ringkasan Pengajaran
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
@@ -738,21 +738,21 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
                       <i className="fas fa-book text-blue-600 text-xl"></i>
                     </div>
                     <p className="text-2xl font-bold text-blue-600">{selectedTeacherDetail.subjects.length}</p>
-                    <p className="text-sm text-gray-600">Subject{selectedTeacherDetail.subjects.length > 1 ? 's' : ''}</p>
+                    <p className="text-sm text-gray-600">Mata Pelajaran{selectedTeacherDetail.subjects.length > 1 ? '' : ''}</p>
                   </div>
                   <div className="text-center">
                     <div className="bg-indigo-100 p-3 rounded-lg mb-2">
                       <i className="fas fa-door-open text-indigo-600 text-xl"></i>
                     </div>
                     <p className="text-2xl font-bold text-indigo-600">{selectedTeacherDetail.classes.length}</p>
-                    <p className="text-sm text-gray-600">Class{selectedTeacherDetail.classes.length > 1 ? 'es' : ''}</p>
+                    <p className="text-sm text-gray-600">Kelas{selectedTeacherDetail.classes.length > 1 ? '' : ''}</p>
                   </div>
                   <div className="text-center">
                     <div className="bg-green-100 p-3 rounded-lg mb-2">
                       <i className="fas fa-tasks text-green-600 text-xl"></i>
                     </div>
                     <p className="text-2xl font-bold text-green-600">{selectedTeacherDetail.assignments.length}</p>
-                    <p className="text-sm text-gray-600">Assignment{selectedTeacherDetail.assignments.length > 1 ? 's' : ''}</p>
+                    <p className="text-sm text-gray-600">Penugasan{selectedTeacherDetail.assignments.length > 1 ? '' : ''}</p>
                   </div>
                   <div className="text-center">
                     <div className="bg-purple-100 p-3 rounded-lg mb-2">
