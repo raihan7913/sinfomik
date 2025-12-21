@@ -143,9 +143,13 @@ const StudentClassEnroll = ({ activeTASemester }) => {
     !allStudentsInSemester.includes(s.id_siswa)
   );
 
-  const filteredAvailableStudents = availableStudents.filter(student =>
-    student.nama_siswa.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAvailableStudents = availableStudents.filter(student => {
+    const q = (searchTerm || '').trim().toLowerCase();
+    if (!q) return true;
+    const name = (student.nama_siswa || '').toLowerCase();
+    const nisn = String(student.id_siswa || '').toLowerCase();
+    return name.includes(q) || nisn.includes(q);
+  });
 
   const handleSelectAll = () => {
     if (selectedStudents.length === filteredAvailableStudents.length) {
@@ -330,7 +334,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium text-gray-900 truncate">{student.nama_siswa}</h4>
-          <p className="text-xs text-gray-500">ID: {student.id_siswa}</p>
+          <p className="text-xs text-gray-500">NISN: {student.id_siswa}</p>
         </div>
       </div>
       {isSelected && (
@@ -366,7 +370,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
       </div>
       <div className="flex-1">
         <h4 className="text-sm font-medium text-gray-900">{student.nama_siswa}</h4>
-        <p className="text-xs text-gray-500">NISN Siswa: {student.id_siswa}</p>
+        <p className="text-xs text-gray-500">NISN: {student.id_siswa}</p>
       </div>
       {isSelected && (
         <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
@@ -379,7 +383,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
   const enrolledStudentsColumns = [
     { 
       key: 'id_siswa', 
-      label: 'NISN Siswa',
+      label: 'NISN',
       render: (value) => <span className="font-medium">{value}</span>
     },
     { 
@@ -687,7 +691,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
                         type="text" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search students..." 
+                        placeholder="Search students or NISN..." 
                         className="w-full sm:w-auto pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                       <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>

@@ -422,6 +422,18 @@ const AdminAnalytics = () => {
         return sortedData;
     };
 
+    // Helper: group rows by tahun_ajaran
+    const groupByYear = (rows) => {
+        if (!rows || rows.length === 0) return {};
+        return rows.reduce((acc, r) => {
+            const key = r.tahun_ajaran || 'Unknown';
+            (acc[key] = acc[key] || []).push(r);
+            return acc;
+        }, {});
+    };
+
+
+
     // Group student data by class and semester
     const groupStudentDataByClassSemester = (data) => {
         if (!data || data.length === 0) return {};
@@ -746,36 +758,50 @@ const AdminAnalytics = () => {
                             </div>
 
                             {/* Data Table */}
-                            <div className="overflow-x-auto bg-white rounded-xl border-2 border-gray-200 shadow-sm">
-                                <table className="min-w-full">
-                                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Mata Pelajaran</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Tahun Ajaran</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Semester</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Rata-rata</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Jumlah Siswa</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Terendah</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Tertinggi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {filteredSchoolData
-                                            .filter(item => selectedMapelSchool === 'all' || parseInt(item.id_mapel) === parseInt(selectedMapelSchool))
-                                            .map((item, idx) => (
-                                                <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-4 text-sm text-gray-900">{item.nama_mapel || '-'}</td>
-                                                    <td className="px-6 py-4 text-sm text-gray-700">{item.tahun_ajaran || '-'}</td>
-                                                    <td className="px-6 py-4 text-sm text-gray-700">{item.semester || '-'}</td>
-                                                    <td className="px-6 py-4 text-center text-sm font-bold text-blue-600">{item.rata_rata_sekolah || '-'}</td>
-                                                    <td className="px-6 py-4 text-center text-sm text-gray-700">{item.jumlah_siswa || '0'}</td>
-                                                    <td className="px-6 py-4 text-center text-sm font-semibold text-red-600">{item.nilai_terendah || '-'}</td>
-                                                    <td className="px-6 py-4 text-center text-sm font-semibold text-green-600">{item.nilai_tertinggi || '-'}</td>
-                                                </tr>
-                                            ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            {(() => {
+                                const rows = filteredSchoolData.filter(item => selectedMapelSchool === 'all' || parseInt(item.id_mapel) === parseInt(selectedMapelSchool));
+                                const grouped = groupByYear(rows);
+                                const years = Object.keys(grouped).sort((a, b) => parseStartYear(b) - parseStartYear(a));
+                                if (years.length === 0) {
+                                    return (
+                                        <EmptyState
+                                            icon="school"
+                                            title="Tidak Ada Data Grafik"
+                                            description="Belum ada data untuk ditampilkan dalam tabel yang dipilih."
+                                        />
+                                    );
+                                }
+
+                                return years.map(year => (
+                                    <div key={year} className="mb-4">
+                                        <h4 className="font-semibold text-gray-800 mb-2">Tahun Ajaran: {year} ({grouped[year].length} Mapel)</h4>
+                                        <div className="overflow-x-auto bg-white rounded-xl border-2 border-gray-200 shadow-sm">
+                                            <table className="min-w-full">
+                                                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Mata Pelajaran</th>
+                                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Rata-rata</th>
+                                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Jumlah Siswa</th>
+                                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Terendah</th>
+                                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Tertinggi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {grouped[year].map((item, idx) => (
+                                                        <tr key={`${year}-${idx}`} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-4 text-sm text-gray-900">{item.nama_mapel || '-'}</td>
+                                                            <td className="px-6 py-4 text-center text-sm font-bold text-blue-600">{item.rata_rata_sekolah || '-'}</td>
+                                                            <td className="px-6 py-4 text-center text-sm text-gray-700">{item.jumlah_siswa || '0'}</td>
+                                                            <td className="px-6 py-4 text-center text-sm font-semibold text-red-600">{item.nilai_terendah || '-'}</td>
+                                                            <td className="px-6 py-4 text-center text-sm font-semibold text-green-600">{item.nilai_tertinggi || '-'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ));
+                            })()}  
                         </>
                     ) : (
                         <EmptyState
@@ -906,28 +932,42 @@ const AdminAnalytics = () => {
                             </div>
 
                             {/* Data Table */}
-                            <div className="overflow-x-auto bg-white rounded-xl border-2 border-gray-200 shadow-sm">
-                                <table className="min-w-full">
-                                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Mata Pelajaran</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Periode</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Rata-rata Angkatan</th>
-                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Jumlah Siswa</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {angkatanData.map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4 text-sm text-gray-900">{item.nama_mapel}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-700">{item.tahun_ajaran} {item.semester}</td>
-                                                <td className="px-6 py-4 text-center text-sm font-bold text-green-600">{item.rata_rata_angkatan}</td>
-                                                <td className="px-6 py-4 text-center text-sm text-gray-700">{item.jumlah_siswa}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            {(() => {
+                                const rows = (selectedMapelAngkatan === 'all') ? angkatanData : angkatanData.filter(item => parseInt(item.id_mapel) === parseInt(selectedMapelAngkatan));
+                                const grouped = groupByYear(rows);
+                                const years = Object.keys(grouped).sort((a, b) => parseStartYear(b) - parseStartYear(a));
+                                if (years.length === 0) return (
+                                    <EmptyState icon="graduation-cap" title="Pilih Angkatan untuk Melihat Data" description="Silakan pilih angkatan dari dropdown di atas untuk melihat analytics." />
+                                );
+
+                                return years.map(year => (
+                                    <div key={year} className="mb-4">
+                                        <h4 className="font-semibold text-gray-800 mb-2">Tahun Ajaran: {year} ({grouped[year].length} Mapel)</h4>
+                                        <div className="overflow-x-auto bg-white rounded-xl border-2 border-gray-200 shadow-sm">
+                                            <table className="min-w-full">
+                                                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Mata Pelajaran</th>
+                                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b-2">Periode</th>
+                                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Rata-rata Angkatan</th>
+                                                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b-2">Jumlah Siswa</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {grouped[year].map((item, idx) => (
+                                                        <tr key={`${year}-${idx}`} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-4 text-sm text-gray-900">{item.nama_mapel}</td>
+                                                            <td className="px-6 py-4 text-sm text-gray-700">{item.tahun_ajaran} {item.semester}</td>
+                                                            <td className="px-6 py-4 text-center text-sm font-bold text-green-600">{item.rata_rata_angkatan}</td>
+                                                            <td className="px-6 py-4 text-center text-sm text-gray-700">{item.jumlah_siswa}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ));
+                            })()}
                         </>
                     ) : (
                         <EmptyState
