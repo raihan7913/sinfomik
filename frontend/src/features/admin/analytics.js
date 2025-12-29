@@ -1335,7 +1335,7 @@ const AdminAnalytics = () => {
                                                                     <td className="px-3 py-2 text-center text-sm">{d.urutan_tp ? `TP${d.urutan_tp}` : '-'}</td>
                                                                     <td className="px-3 py-2 text-sm">{d.tp_name || '-'}</td>
                                                                     <td className="px-3 py-2 text-center text-sm font-semibold">{d.nilai !== null && d.nilai !== undefined ? d.nilai : '-'}</td>
-                                                                    <td className="px-3 py-2 text-center text-sm">{d.tanggal_input ? new Date(d.tanggal_input).toLocaleDateString() : '-'}</td>
+                                                                    <td className="px-3 py-2 text-center text-sm">{d.tanggal_input ? new Date(d.tanggal_input).toLocaleDateString('en-GB') : '-'}</td>
                                                                 </tr>
                                                             );
                                                         });
