@@ -109,7 +109,7 @@ function PWAInstallPrompt() {
           color: '#1f2937',
           marginBottom: '4px'
         }}>
-          Install SINFOMIK
+          Pasang SINFOMIK
         </div>
         <div style={{
           fontSize: '12px',
@@ -133,7 +133,7 @@ function PWAInstallPrompt() {
           whiteSpace: 'nowrap'
         }}
       >
-        Install
+        Pasang
       </button>
 
       <button
@@ -147,7 +147,7 @@ function PWAInstallPrompt() {
           fontSize: '20px',
           lineHeight: 1
         }}
-        title="Dismiss"
+        title="Tutup"
       >
         ×
       </button>

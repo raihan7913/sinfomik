@@ -587,7 +587,7 @@ exports.exportStudentTemplate = async (req, res) => {
         const wb = xlsx.utils.book_new();
         
         // Header columns (added 'Tahun Ajaran' which accepts single-year like 2024 or full '2024/2025')
-        const headers = ['NISN', 'Nama Siswa', 'Tanggal Lahir', 'Jenis Kelamin', 'Tahun Ajaran Masuk'];
+        const headers = ['NIS', 'Nama Siswa', 'Tanggal Lahir', 'Jenis Kelamin', 'Tahun Ajaran Masuk'];
         
         // Sample data for guidance (last column is Tahun Ajaran - can be '2024' or '2024/2025')
         const sampleData = [
@@ -601,7 +601,7 @@ exports.exportStudentTemplate = async (req, res) => {
             ['TEMPLATE IMPORT DATA SISWA'],
             [''],
             ['PETUNJUK PENGISIAN:'],
-            ['1. NISN: Nomor Induk Siswa (bisa angka atau kombinasi, bebas format)'],
+            ['1. NIS: Nomor Induk Siswa (bisa angka atau kombinasi, bebas format)'],
             ['2. Nama Siswa: Nama lengkap siswa'],
             ['3. Tanggal Lahir: Format YYYY-MM-DD (contoh: 2010-05-15) atau kosongkan'],
             ['4. Jenis Kelamin: L (Laki-laki) atau P (Perempuan)'],
@@ -612,7 +612,7 @@ exports.exportStudentTemplate = async (req, res) => {
             ...sampleData,
             [''],
             ['Hapus baris contoh ini dan isi dengan data siswa Anda mulai dari baris ke-11'],
-            ['Pastikan kolom NISN dan Nama Siswa tidak kosong. Tahun Ajaran dapat berupa tahun tunggal (4 digit) atau rentang (YYYY/YYYY) jika diisi.']
+            ['Pastikan kolom NIS dan Nama Siswa tidak kosong. Tahun Ajaran dapat berupa tahun tunggal (4 digit) atau rentang (YYYY/YYYY) jika diisi.']
         ];
         
         // Create worksheet
@@ -620,7 +620,7 @@ exports.exportStudentTemplate = async (req, res) => {
         
         // Set column widths
         ws['!cols'] = [
-            { wch: 15 }, // NISN
+            { wch: 15 }, // NIS
             { wch: 30 }, // Nama Siswa
             { wch: 15 }, // Tanggal Lahir
             { wch: 15 }, // Jenis Kelamin
@@ -669,7 +669,7 @@ exports.importStudents = async (req, res) => {
         for (let i = 0; i < data.length; i++) {
             const row = data[i];
             if (Array.isArray(row) && row.length >= 2) {
-                const hasNisn = row.some(cell => cell && cell.toString().toUpperCase().includes('NISN'));
+                const hasNisn = row.some(cell => cell && cell.toString().toUpperCase().includes('NIS'));
                 const hasNama = row.some(cell => cell && cell.toString().toUpperCase().includes('NAMA'));
                 // Must have both NISN and Nama columns (to avoid matching instruction rows)
                 if (hasNisn && hasNama) {
@@ -681,21 +681,21 @@ exports.importStudents = async (req, res) => {
         
         if (headerRowIndex === -1) {
             return res.status(400).json({ 
-                message: 'Format Excel tidak valid. Header "NISN" tidak ditemukan.',
-                hint: 'Pastikan ada baris dengan kolom "NISN" di Excel Anda'
+                message: 'Format Excel tidak valid. Header "NIS" tidak ditemukan.',
+                hint: 'Pastikan ada baris dengan kolom "NIS" di Excel Anda'
             });
         }
         
         const headers = data[headerRowIndex].map(h => h ? h.toString().trim().toUpperCase() : '');
         
-        const nisnIndex = headers.findIndex(h => h.includes('NISN'));
+        const nisnIndex = headers.findIndex(h => h.includes('NIS'));
         const namaIndex = headers.findIndex(h => h.includes('NAMA'));
         const tglLahirIndex = headers.findIndex(h => h.includes('TANGGAL') || h.includes('LAHIR'));
         const jenisKelaminIndex = headers.findIndex(h => h.includes('JENIS') || h.includes('KELAMIN'));
         
         if (nisnIndex === -1 || namaIndex === -1) {
             return res.status(400).json({ 
-                message: 'Kolom NISN dan Nama Siswa harus ada di Excel',
+                message: 'Kolom NIS dan Nama Siswa harus ada di Excel',
                 foundHeaders: headers,
                 detectedIndices: { nisnIndex, namaIndex }
             });
@@ -741,7 +741,7 @@ exports.importStudents = async (req, res) => {
             // Validate NISN (allow any format, just not empty)
             if (!nisn || nisn.length === 0) {
                 results.failed++;
-                results.errors.push(`NISN kosong untuk siswa: ${nama}`);
+                results.errors.push(`NIS kosong untuk siswa: ${nama}`);
                 continue;
             }
             
@@ -828,14 +828,14 @@ exports.exportEnrollmentTemplate = async (req, res) => {
             ['TEMPLATE IMPORT ENROLLMENT SISWA KE KELAS'],
             [],
             ['PETUNJUK PENGISIAN:'],
-            ['1. NISN: Nomor Induk Siswa (harus sudah terdaftar di sistem)'],
+            ['1. NIS: Nomor Induk Siswa (harus sudah terdaftar di sistem)'],
             ['2. Nama Kelas: Nama kelas tujuan (contoh: 10 IPA 1, 11 IPS 2)'],
             [''],
             ['CATATAN: Data akan otomatis masuk ke Tahun Ajaran Semester yang sedang aktif'],
-            ['Pastikan NISN dan Nama Kelas sudah ada di sistem'],
+            ['Pastikan NIS dan Nama Kelas sudah ada di sistem'],
             [],
             ['CONTOH DATA (mulai dari baris ke-11):'],
-            ['NISN', 'Nama Kelas'],
+            ['NIS', 'Nama Kelas'],
             ['123456789', '1 Darahadeh'],
             ['987654321', '2 Daria'],
         ];
@@ -902,7 +902,7 @@ exports.importEnrollment = async (req, res) => {
         for (let i = 0; i < data.length; i++) {
             const row = data[i];
             if (Array.isArray(row) && row.length >= 2) {
-                const hasNISN = row.some(cell => cell && cell.toString().toUpperCase().includes('NISN'));
+                const hasNISN = row.some(cell => cell && cell.toString().toUpperCase().includes('NIS'));
                 const hasKelas = row.some(cell => cell && cell.toString().toUpperCase().includes('KELAS'));
                 if (hasNISN && hasKelas) {
                     headerRowIndex = i;
@@ -913,19 +913,19 @@ exports.importEnrollment = async (req, res) => {
         
         if (headerRowIndex === -1) {
             return res.status(400).json({ 
-                message: 'Format Excel tidak valid. Header "NISN" dan "Nama Kelas" tidak ditemukan.',
-                hint: 'Pastikan ada baris dengan kolom "NISN" dan "Nama Kelas" di Excel Anda'
+                message: 'Format Excel tidak valid. Header "NIS" dan "Nama Kelas" tidak ditemukan.',
+                hint: 'Pastikan ada baris dengan kolom "NIS" dan "Nama Kelas" di Excel Anda'
             });
         }
         
         const headers = data[headerRowIndex].map(h => h ? h.toString().trim().toUpperCase() : '');
         
-        const nisnIndex = headers.findIndex(h => h.includes('NISN'));
+        const nisnIndex = headers.findIndex(h => h.includes('NIS'));
         const kelasIndex = headers.findIndex(h => h.includes('KELAS'));
         
         if (nisnIndex === -1 || kelasIndex === -1) {
             return res.status(400).json({ 
-                message: 'Kolom NISN dan Nama Kelas harus ada di Excel',
+                message: 'Kolom NIS dan Nama Kelas harus ada di Excel',
                 foundHeaders: headers,
                 detectedIndices: { nisnIndex, kelasIndex }
             });
@@ -952,17 +952,17 @@ exports.importEnrollment = async (req, res) => {
             // Validate
             if (!nisn || nisn.length === 0) {
                 results.failed++;
-                results.errors.push(`NISN kosong`);
+                results.errors.push(`NIS kosong`);
                 continue;
             }
             
             if (!namaKelas || namaKelas.length === 0) {
                 results.failed++;
-                results.errors.push(`Nama kelas kosong untuk NISN: ${nisn}`);
+                results.errors.push(`Nama kelas kosong untuk NIS: ${nisn}`);
                 continue;
             }
             
-            console.log(`[IMPORT-ENROLL] Processing row: NISN='${nisn}', Kelas='${namaKelas}'`);
+            console.log(`[IMPORT-ENROLL] Processing row: NIS='${nisn}', Kelas='${namaKelas}'`);
             try {
                 await new Promise((resolve, reject) => {
                     // Check if student exists
@@ -983,7 +983,7 @@ exports.importEnrollment = async (req, res) => {
                         
                             if (!siswa) {
                             results.failed++;
-                            results.errors.push(`Siswa dengan NISN ${nisn} tidak ditemukan`);
+                            results.errors.push(`Siswa dengan NIS ${nisn} tidak ditemukan`);
                             console.warn(`[IMPORT-ENROLL] Student not found: ${nisn}`);
                             return resolve();
                         }
@@ -999,7 +999,7 @@ exports.importEnrollment = async (req, res) => {
                                 
                                 if (!kelas) {
                                     results.failed++;
-                                    results.errors.push(`Kelas "${namaKelas}" tidak ditemukan di semester aktif untuk NISN: ${nisn}`);
+                                    results.errors.push(`Kelas "${namaKelas}" tidak ditemukan di semester aktif untuk NIS: ${nisn}`);
                                     console.warn(`[IMPORT-ENROLL] Class not found: ${namaKelas} (semester ${idTASemester})`);
                                     return resolve();
                                 }
@@ -1013,7 +1013,7 @@ exports.importEnrollment = async (req, res) => {
                                         
                                         if (existing) {
                                             results.skipped++;
-                                            console.log(`[IMPORT-ENROLL] Already enrolled: NISN=${siswa.id_siswa}, id_kelas=${kelas.id_kelas}`);
+                                            console.log(`[IMPORT-ENROLL] Already enrolled: NIS=${siswa.id_siswa}, id_kelas=${kelas.id_kelas}`);
                                             return resolve();
                                         }
                                         
@@ -1025,8 +1025,8 @@ exports.importEnrollment = async (req, res) => {
                                             function(err) {
                                                 if (err) {
                                                     results.failed++;
-                                                    results.errors.push(`Gagal enroll NISN ${nisn} ke ${namaKelas}: ${err.message}`);
-                                                    console.error(`[IMPORT-ENROLL] Failed to insert enrollment: NISN=${siswa.id_siswa}, id_kelas=${kelas.id_kelas}`, err.message);
+                                                    results.errors.push(`Gagal enroll NIS ${nisn} ke ${namaKelas}: ${err.message}`);
+                                                    console.error(`[IMPORT-ENROLL] Failed to insert enrollment: NIS=${siswa.id_siswa}, id_kelas=${kelas.id_kelas}`, err.message);
                                                     return reject(err);
                                                 }
                                                 results.success++;

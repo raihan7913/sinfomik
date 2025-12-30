@@ -285,7 +285,7 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
                 </div>
                 <button onClick={onLogout} className="logout-btn">
                     <i className="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
+                    <span>Keluar</span>
                 </button>
             
             </div>
@@ -310,7 +310,7 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                                     <i className={`fas ${userRole === 'admin' ? 'fa-shield-alt' : userRole === 'guru' ? 'fa-chalkboard-teacher' : 'fa-user-graduate'} text-white`}></i>
                                 </div>
-                                Dashboard {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                Dasbor {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
                             </h1>
                             <p className="text-gray-600 flex items-center gap-2">
                                 <i className="fas fa-calendar-alt text-indigo-600"></i>
@@ -334,10 +334,10 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
                             <button
                                 onClick={onLogout}
                                 className="hidden md:flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 font-medium border border-red-200"
-                                title="Logout"
+                                title="Keluar"
                             >
                                 <i className="fas fa-sign-out-alt"></i>
-                                <span>Logout</span>
+                                <span>Keluar</span>
                             </button>
                         </div>
                     </div>

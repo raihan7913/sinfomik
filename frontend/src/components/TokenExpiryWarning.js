@@ -184,7 +184,7 @@ const TokenExpiryWarning = ({ isLoggedIn, onLogout, onRefresh }) => {
             fullWidth
             onClick={handleTokenExpired}
           >
-            Logout
+            Keluar
           </Button>
           <Button
             variant="primary"
@@ -197,7 +197,7 @@ const TokenExpiryWarning = ({ isLoggedIn, onLogout, onRefresh }) => {
         </div>
 
         <p className="text-xs text-gray-400 text-center mt-4">
-          Jika tidak ada aktivitas, Anda akan logout otomatis untuk keamanan.
+          Jika tidak ada aktivitas, Anda akan keluar otomatis untuk keamanan.
         </p>
       </div>
     </div>

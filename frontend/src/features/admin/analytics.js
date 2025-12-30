@@ -178,7 +178,7 @@ const AdminAnalytics = () => {
             
             if (studentInfo && tabType === 'student') {
                 pdf.setFontSize(9);
-                pdf.text(`${studentInfo.nama} (ID: ${studentInfo.id})`, pageWidth / 2, 35, { align: 'center' });
+                pdf.text(`${studentInfo.nama} (NIS: ${studentInfo.id})`, pageWidth / 2, 35, { align: 'center' });
             }
 
             pdf.setDrawColor(255, 255, 255);
@@ -561,7 +561,7 @@ const AdminAnalytics = () => {
         <ModuleContainer>
             <PageHeader
                 icon="chart-bar"
-                title="Dashboard Analytics"
+                title="Analitik Dasbor"
                 subtitle="Analisis lengkap performa akademik sekolah, angkatan, dan siswa"
             />
 

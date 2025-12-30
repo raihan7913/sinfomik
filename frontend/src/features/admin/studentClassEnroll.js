@@ -341,7 +341,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium text-gray-900 truncate">{student.nama_siswa}</h4>
-          <p className="text-xs text-gray-500">NISN: {student.id_siswa}</p>
+          <p className="text-xs text-gray-500">NIS: {student.id_siswa}</p>
         </div>
       </div>
       {isSelected && (
@@ -377,7 +377,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
       </div>
       <div className="flex-1">
         <h4 className="text-sm font-medium text-gray-900">{student.nama_siswa}</h4>
-        <p className="text-xs text-gray-500">NISN: {student.id_siswa}</p>
+        <p className="text-xs text-gray-500">NIS: {student.id_siswa}</p>
       </div>
       {isSelected && (
         <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
@@ -390,7 +390,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
   const enrolledStudentsColumns = [
     { 
       key: 'id_siswa', 
-      label: 'NISN',
+      label: 'NIS',
       render: (value) => <span className="font-medium">{value}</span>
     },
     { 
@@ -579,7 +579,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
                 </div>
                 <p className="text-sm text-gray-600 mt-3">
                   <i className="fas fa-info-circle mr-1"></i>
-                  Download template, isi NISN dan Nama Kelas, lalu upload untuk enroll otomatis ke semester aktif
+                  Download template, isi NIS dan Nama Kelas, lalu upload untuk enroll otomatis ke semester aktif
                 </p>
                 {importErrors && importErrors.length > 0 && (
                   <div className="mt-3 bg-red-50 border border-red-200 rounded p-3">
@@ -698,7 +698,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
                         type="text" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search students or NISN..." 
+                        placeholder="Cari Siswa or NIS..." 
                         className="w-full sm:w-auto pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                       <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>

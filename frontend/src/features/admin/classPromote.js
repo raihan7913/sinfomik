@@ -116,11 +116,11 @@ const ClassPromote = () => {
 
   const handlePromoteClick = () => {
     if (!fromKelasId || !toKelasId || !fromTASemesterId || !toTASemesterId || studentsInFromKelas.length === 0) {
-      showMessage('Please complete all selections and ensure there are students in the source class.', 'error');
+      showMessage('Lengkapi semua pilihan dan pastikan ada siswa di kelas sumber.', 'error');
       return;
     }
     if (fromKelasId === toKelasId && fromTASemesterId === toTASemesterId) {
-      showMessage('Source and destination class cannot be the same for the same semester.', 'error');
+      showMessage('Kelas sumber dan tujuan tidak boleh sama pada semester yang sama.', 'error');
       return;
     }
     setShowConfirm(true);
@@ -155,12 +155,12 @@ const ClassPromote = () => {
   const studentColumns = [
     {
       key: 'id_siswa',
-      label: 'Student ID',
+      label: 'NIS',
       render: (value) => <span className="font-medium">{value}</span>
     },
     {
       key: 'nama_siswa',
-      label: 'Student Name',
+      label: 'Nama Siswa',
       render: (value) => (
         <div className="flex items-center">
           <div className="bg-gradient-to-r from-blue-400 to-indigo-500 p-2 rounded-full mr-3">
@@ -176,7 +176,7 @@ const ClassPromote = () => {
       render: () => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           <i className="fas fa-check-circle mr-1"></i>
-          Ready to promote
+          Siap dipromosikan
         </span>
       )
     }
@@ -189,25 +189,25 @@ const ClassPromote = () => {
 
   const statsData = [
     {
-      label: 'Students to Promote',
+      label: 'Siswa yang akan dipromosikan',
       value: studentsInFromKelas.length,
       icon: 'user-graduate',
       gradient: 'from-blue-400 to-indigo-500'
     },
     {
-      label: 'Source Class',
+      label: 'Kelas Sumber',
       value: fromClass?.nama_kelas || '-',
       icon: 'arrow-circle-right',
       gradient: 'from-orange-400 to-red-500'
     },
     {
-      label: 'Destination Class',
+      label: 'Kelas Tujuan',
       value: toClass?.nama_kelas || '-',
       icon: 'arrow-circle-left',
       gradient: 'from-emerald-400 to-cyan-500'
     },
     {
-      label: 'Available Classes',
+      label: 'Jumlah Kelas',
       value: taSemesters.length,
       icon: 'calendar-alt',
       gradient: 'from-purple-400 to-pink-500'
@@ -229,7 +229,7 @@ const ClassPromote = () => {
               fetchInitialData();
               fetchStudentsForPromotion();
             }}
-            title="Refresh"
+            title="Muat Ulang"
           />
         }
       />
@@ -259,7 +259,7 @@ const ClassPromote = () => {
         />
       )}
 
-      {loading && <LoadingSpinner message="Loading class promotion data..." />}
+      {loading && <LoadingSpinner message="Memuat data promosi kelas..." />}
 
       {error && (
         <StatusMessage 
@@ -283,7 +283,7 @@ const ClassPromote = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8">
             {/* Source Class */}
             <FormSection 
-              title="From (Source)" 
+              title="Sumber" 
               icon="arrow-circle-right"
               variant="warning"
             >
@@ -291,7 +291,7 @@ const ClassPromote = () => {
                 <div className="form-group">
                   <label>
                     <i className="fas fa-calendar-alt mr-2 text-gray-500"></i>
-                    Academic Year & Semester
+                    Tahun Ajaran & Semester
                   </label>
                   <select 
                     value={fromTASemesterId} 
@@ -308,7 +308,7 @@ const ClassPromote = () => {
                 <div className="form-group">
                   <label>
                     <i className="fas fa-door-open mr-2 text-gray-500"></i>
-                    Source Class
+                    Kelas Asal
                   </label>
                   <select 
                     value={fromKelasId} 
@@ -324,7 +324,7 @@ const ClassPromote = () => {
 
             {/* Destination Class */}
             <FormSection 
-              title="To (Destination)" 
+              title="Tujuan" 
               icon="arrow-circle-left"
               variant="success"
             >
@@ -332,7 +332,7 @@ const ClassPromote = () => {
                 <div className="form-group">
                   <label>
                     <i className="fas fa-calendar-alt mr-2 text-gray-500"></i>
-                    Academic Year & Semester
+                    Tahun Ajaran & Semester
                   </label>
                   <select 
                     value={toTASemesterId} 
@@ -349,7 +349,7 @@ const ClassPromote = () => {
                 <div className="form-group">
                   <label>
                     <i className="fas fa-door-open mr-2 text-gray-500"></i>
-                    Destination Class
+                    Kelas Tujuan
                   </label>
                   <select 
                     value={toKelasId} 
@@ -369,7 +369,7 @@ const ClassPromote = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
               <h3 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center">
                 <i className="fas fa-users mr-3 text-purple-500 text-2xl sm:text-3xl"></i>
-                Students in Source Class
+                Siswa di Kelas Sumber
                 {fromClass && (
                   <span className="ml-3 text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
                     {fromClass.nama_kelas}
@@ -380,7 +380,7 @@ const ClassPromote = () => {
                 <div className="flex items-center">
                   <i className="fas fa-user-friends mr-2"></i>
                   <span className="font-bold text-lg">{studentsInFromKelas.length}</span>
-                  <span className="ml-1 text-sm">Students</span>
+                    <span className="ml-1 text-sm">Siswa</span>
                 </div>
               </div>
             </div>
@@ -393,8 +393,8 @@ const ClassPromote = () => {
             ) : (
               <EmptyState
                 icon="user-slash"
-                title="No Students Found"
-                message="There are no students in the selected source class."
+                title="Tidak ada siswa"
+                message="Tidak ada siswa di kelas sumber yang dipilih."
               />
             )}
           </div>
@@ -404,11 +404,11 @@ const ClassPromote = () => {
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 mb-8">
               <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
                 <i className="fas fa-clipboard-check mr-2 text-blue-500"></i>
-                Promotion Summary
+                Ringkasan Promosi
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-1">From</p>
+                  <p className="text-sm text-gray-500 mb-1">Dari</p>
                   <p className="font-bold text-orange-600">{fromClass.nama_kelas}</p>
                   <p className="text-xs text-gray-500">{fromSemester?.tahun_ajaran} - {fromSemester?.semester}</p>
                 </div>
@@ -418,7 +418,7 @@ const ClassPromote = () => {
                   </div>
                 </div>
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-1">To</p>
+                  <p className="text-sm text-gray-500 mb-1">Ke</p>
                   <p className="font-bold text-green-600">{toClass.nama_kelas}</p>
                   <p className="text-xs text-gray-500">{toSemester?.tahun_ajaran} - {toSemester?.semester}</p>
                 </div>
@@ -435,7 +435,7 @@ const ClassPromote = () => {
               disabled={studentsInFromKelas.length === 0 || !toKelasId}
               className="px-8 py-4 text-lg"
             >
-              Promote {studentsInFromKelas.length} Student{studentsInFromKelas.length !== 1 ? 's' : ''}
+              Promosikan {studentsInFromKelas.length} Siswa
             </Button>
           </div>
         </>
@@ -445,10 +445,10 @@ const ClassPromote = () => {
       {showConfirm && (
         <ConfirmDialog
           show={showConfirm}
-          title="Confirm Student Promotion"
-          message={`Are you sure you want to promote ${studentsInFromKelas.length} student${studentsInFromKelas.length !== 1 ? 's' : ''} from ${fromClass?.nama_kelas} (${fromSemester?.tahun_ajaran} - ${fromSemester?.semester}) to ${toClass?.nama_kelas} (${toSemester?.tahun_ajaran} - ${toSemester?.semester})? This action will move all students to the new class.`}
-          confirmText="Promote Students"
-          cancelText="Cancel"
+          title="Konfirmasi Promosi Siswa"
+          message={`Apakah Anda yakin ingin mempromosikan ${studentsInFromKelas.length} siswa dari ${fromClass?.nama_kelas} (${fromSemester?.tahun_ajaran} - ${fromSemester?.semester}) ke ${toClass?.nama_kelas} (${toSemester?.tahun_ajaran} - ${toSemester?.semester})? Aksi ini akan memindahkan semua siswa ke kelas tujuan.`}
+          confirmText="Promosikan Siswa"
+          cancelText="Batal"
           onConfirm={handlePromoteStudents}
           onCancel={() => setShowConfirm(false)}
           variant="primary"
