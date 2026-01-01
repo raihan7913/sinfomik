@@ -362,7 +362,15 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
   // make bar chart taller when many subjects to avoid overcrowding
   const subjectChartHeight = Math.max(300, (processedData.gradesBySubjectChart || []).length * 36);
   const studentsAbove75 = processedData.summaryTableData.filter(s => s.overall_final_average >= 75).length;
-  const studentsBelow60 = processedData.summaryTableData.filter(s => s.overall_final_average < 60).length;
+  
+  // Check if student has ANY subject below 60 (not just overall average)
+  const studentsNeedingAttention = processedData.summaryTableData.filter(student => {
+    return allSubjectNames.some(subject => {
+      const subjectAvg = student[`${subject}_RataRata`];
+      return subjectAvg !== null && subjectAvg < 60;
+    });
+  });
+  const studentsBelow60 = studentsNeedingAttention.length;
 
   return (
     <ModuleContainer>
@@ -440,7 +448,7 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
             <div className="p-6 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg shadow-sm">
               <p className="text-sm text-gray-600 mb-1">Perlu Perhatian</p>
               <p className="text-3xl font-bold text-red-600">{studentsBelow60}</p>
-              <p className="text-xs text-gray-500">Nilai {'<'} 60</p>
+              <p className="text-xs text-gray-500">Ada mapel {'<'} 60</p>
             </div>
           </div>
 
@@ -450,44 +458,67 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
                 <i className="fas fa-exclamation-triangle mr-2"></i>
                 Siswa yang Perlu Perhatian Khusus
               </h3>
+              <p className="text-sm text-gray-700 mb-4">
+                Siswa dengan nilai mata pelajaran di bawah 60 (KKM)
+              </p>
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border rounded">
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="px-4 py-2 border text-left">Nama Siswa</th>
-                      <th className="px-4 py-2 border text-center">Rata-rata</th>
-                      <th className="px-4 py-2 border text-center">Status</th>
+                      <th className="px-4 py-2 border text-left">Mata Pelajaran Bermasalah</th>
+                      <th className="px-4 py-2 border text-center">Rata-rata Keseluruhan</th>
                       <th className="px-4 py-2 border text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {processedData.summaryTableData
-                      .filter(s => s.overall_final_average < 60)
-                      .sort((a, b) => a.overall_final_average - b.overall_final_average)
-                      .map(student => (
-                        <tr key={student.id_siswa} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 border">{student.nama_siswa}</td>
-                          <td className="px-4 py-2 border text-center">
-                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded font-semibold">
-                              {student.overall_final_average}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 border text-center">
-                            <span className="px-2 py-1 bg-red-500 text-white rounded text-xs">
-                              Kritis
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 border text-center">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleStudentClick(student)}
-                            >
-                              Lihat Detail
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
+                    {studentsNeedingAttention
+                      .sort((a, b) => {
+                        // Sort by number of subjects below 60 (descending), then by overall average
+                        const aCount = allSubjectNames.filter(s => a[`${s}_RataRata`] < 60).length;
+                        const bCount = allSubjectNames.filter(s => b[`${s}_RataRata`] < 60).length;
+                        if (bCount !== aCount) return bCount - aCount;
+                        return a.overall_final_average - b.overall_final_average;
+                      })
+                      .map(student => {
+                        const subjectsBelow60 = allSubjectNames.filter(subject => {
+                          const avg = student[`${subject}_RataRata`];
+                          return avg !== null && avg < 60;
+                        });
+                        
+                        return (
+                          <tr key={student.id_siswa} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 border font-medium">{student.nama_siswa}</td>
+                            <td className="px-4 py-2 border">
+                              <div className="flex flex-wrap gap-1">
+                                {subjectsBelow60.map(subject => (
+                                  <span key={subject} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">
+                                    {subject}: {student[`${subject}_RataRata`]}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 border text-center">
+                              <span className={`px-2 py-1 rounded font-semibold ${
+                                student.overall_final_average >= 75 ? 'bg-green-100 text-green-800' :
+                                student.overall_final_average >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {student.overall_final_average}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 border text-center">
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleStudentClick(student)}
+                              >
+                                Lihat Detail
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
