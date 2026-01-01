@@ -80,7 +80,7 @@ app.use('/api', limiter);
 // Stricter rate limit for auth routes
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'production' ? 20 : 100, // REDUCED: 20 for prod (was 50), 100 for dev
+    max: parseInt(process.env.AUTH_RATE_LIMIT_MAX) || (process.env.NODE_ENV === 'production' ? 50 : 100), // Configurable: 50 for prod, 100 for dev
     message: 'Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.',
     skipSuccessfulRequests: true, // Don't count successful requests
     handler: (req, res) => {

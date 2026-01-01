@@ -173,7 +173,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
     setIsAssigning(true);
     
     if (!selectedKelasId || !activeTASemester || selectedStudents.length === 0) {
-      showMessage('Please select a class and at least one student.', 'error');
+      showMessage('Silakan pilih kelas dan setidaknya satu siswa.', 'error');
       setIsAssigning(false);
       return;
     }
@@ -275,7 +275,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
     setWaitingForFile(false); // file chosen, stop waiting state
 
     setIsImporting(true);
-    showMessage('Importing file, please wait...', 'info');
+    showMessage('Mengimpor file, harap tunggu...', 'info');
     try {
       console.log('[UI] handleImportExcel started, file:', file);
       setImportErrors([]);
@@ -488,7 +488,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
         />
       )}
 
-      {loading && <LoadingSpinner message="Loading enrollment data..." />}
+      {loading && <LoadingSpinner message="Memuat data penugasan siswa..." />}
 
       {error && (
         <StatusMessage 
@@ -503,7 +503,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
           {!activeTASemester && (
             <StatusMessage 
               type="warning"
-              message="Please set an active Academic Year & Semester first."
+              message="Silakan atur Tahun Ajaran & Semester aktif terlebih dahulu."
               icon="exclamation-triangle"
               className="mb-6"
             />
