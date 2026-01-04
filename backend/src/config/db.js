@@ -26,8 +26,8 @@ function initializePool() {
         port: parseInt(process.env.DB_PORT) || 5432,
         database: process.env.DB_NAME || 'sinfomik',
         // Connection pool settings - IMPROVED for DDoS resilience
-        max: parseInt(process.env.DB_POOL_MAX) || 50, // INCREASED: 50 connections (was 20)
-        min: parseInt(process.env.DB_POOL_MIN) || 5, // ADDED: Keep 5 connections always alive
+        max: parseInt(process.env.DB_POOL_MAX) || 100, // INCREASED: 100 connections (was 50)
+        min: parseInt(process.env.DB_POOL_MIN) || 10, // INCREASED: Keep 10 connections always alive (was 5)
         idleTimeoutMillis: 30000, // Close idle connections after 30s
         connectionTimeoutMillis: 5000, // INCREASED: Wait 5s for connection (was 2s)
         // Query timeout

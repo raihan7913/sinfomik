@@ -41,11 +41,21 @@ app.use(helmet({
 
 // 2. CORS - Configure properly untuk specific origin
 // In production, if frontend is served from same domain, allow same origin
-// In development, allow localhost:3000
+// In development, allow localhost:3000 and local network IPs
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
         ? [FRONTEND_URL, 'https://*.azurewebsites.net', 'https://*.azurestaticapps.net', 'https://sinfomik-backend-gzcng8eucydhgucz.southeastasia-01.azurewebsites.net', 'https://salmon-glacier-082ece600.3.azurestaticapps.net'] // Allow Azure domains
-        : ['http://localhost:3000', 'http://localhost:3001'], // Development
+        : function (origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl)
+            if (!origin) return callback(null, true);
+            
+            // Allow localhost and local network IPs (192.168.x.x, 10.x.x.x)
+            if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
     credentials: true,
     exposedHeaders: ['Content-Disposition']
 };
@@ -56,7 +66,7 @@ app.use(cors(corsOptions));
 // IMPROVED: Much stricter limits to prevent DDoS
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || (process.env.NODE_ENV === 'production' ? 200 : 1000), // REDUCED: 200 for prod, 1000 for dev
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || (process.env.NODE_ENV === 'production' ? 1000 : 2000), // 1000 for prod, 2000 for dev
     message: {
         error: 'Too many requests',
         message: 'Anda telah mencapai batas request. Silakan tunggu beberapa saat sebelum mencoba lagi.',
@@ -80,7 +90,7 @@ app.use('/api', limiter);
 // Stricter rate limit for auth routes
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.AUTH_RATE_LIMIT_MAX) || (process.env.NODE_ENV === 'production' ? 50 : 100), // Configurable: 50 for prod, 100 for dev
+    max: parseInt(process.env.AUTH_RATE_LIMIT_MAX) || (process.env.NODE_ENV === 'production' ? 100 : 200), // 100 for prod, 200 for dev
     message: 'Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.',
     skipSuccessfulRequests: true, // Don't count successful requests
     handler: (req, res) => {
@@ -96,7 +106,7 @@ const authLimiter = rateLimit({
 // Note: File uploads have separate concurrency control via multer + queue
 const expensiveOpLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
-    max: process.env.NODE_ENV === 'production' ? 10 : 50, // Only 10 requests per 5 min in production
+    max: process.env.NODE_ENV === 'production' ? 30 : 100, // 30 requests per 5 min in production, 100 in dev
     message: 'Operasi ini memerlukan banyak sumber daya. Silakan tunggu beberapa saat.',
     handler: (req, res) => {
         console.warn(`🚨 Expensive operation limit exceeded for IP: ${req.ip} on ${req.path}`);
@@ -111,7 +121,7 @@ const expensiveOpLimiter = rateLimit({
 // ADDED: Moderate limit for general read operations
 const readLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: process.env.NODE_ENV === 'production' ? 60 : 200, // 60 per minute in production
+    max: process.env.NODE_ENV === 'production' ? 200 : 500, // 200 per minute in production, 500 in dev
     message: 'Terlalu banyak permintaan. Silakan tunggu sebentar.',
 });
 

@@ -7,18 +7,18 @@ const requestQueue = new Map(); // Queue for each endpoint
 // Configuration per endpoint type
 const LIMITS = {
     expensive: { // For analytics, exports, file uploads
-        maxConcurrent: parseInt(process.env.MAX_CONCURRENT_EXPENSIVE) || 5,
-        maxQueue: 20,
+        maxConcurrent: parseInt(process.env.MAX_CONCURRENT_EXPENSIVE) || 15, // Increased from 5 to 15
+        maxQueue: 50, // Increased from 20 to 50
         timeout: 120000 // 120 seconds - allow time for file uploads
     },
     moderate: { // For admin, guru routes
-        maxConcurrent: parseInt(process.env.MAX_CONCURRENT_MODERATE) || 50,
-        maxQueue: 100,
+        maxConcurrent: parseInt(process.env.MAX_CONCURRENT_MODERATE) || 100, // Increased from 50 to 100
+        maxQueue: 200, // Increased from 100 to 200
         timeout: 30000 // 30 seconds
     },
     light: { // For simple operations
-        maxConcurrent: parseInt(process.env.MAX_CONCURRENT_LIGHT) || 200,
-        maxQueue: 500,
+        maxConcurrent: parseInt(process.env.MAX_CONCURRENT_LIGHT) || 300, // Increased from 200 to 300
+        maxQueue: 1000, // Increased from 500 to 1000
         timeout: 15000 // 15 seconds
     }
 };

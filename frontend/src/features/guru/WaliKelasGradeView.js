@@ -30,6 +30,13 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
   const [studentHistory, setStudentHistory] = useState(null);
   // Radar display mode: 'current' (semester ini) or 'multi' (gabungan multi-semester)
   const [radarMode, setRadarMode] = useState('current');
+  
+  // Time Series Analysis state
+  const [timeSeriesData, setTimeSeriesData] = useState(null);
+  const [timeSeriesLoading, setTimeSeriesLoading] = useState(false);
+  const [earlyWarningsData, setEarlyWarningsData] = useState(null);
+  const [earlyWarningsLoading, setEarlyWarningsLoading] = useState(false);
+  
   const [processedData, setProcessedData] = useState({
     gradesPerSubjectTable: new Map(),
     summaryTableData: [],
@@ -111,7 +118,63 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
     setSelectedStudent(student);
     setActiveView('studentDetail');
     fetchStudentHistory(student.id_siswa);
+    fetchStudentTimeSeries(student.id_siswa);
   };
+  
+  // Fetch Time Series Analysis for student
+  const fetchStudentTimeSeries = useCallback(async (studentId) => {
+    setTimeSeriesLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_BASE_URL}/api/analytics/timeseries/student/${studentId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setTimeSeriesData(result);
+      } else {
+        setTimeSeriesData(null);
+      }
+    } catch (err) {
+      console.error('Error fetching time series:', err);
+      setTimeSeriesData(null);
+    } finally {
+      setTimeSeriesLoading(false);
+    }
+  }, []);
+  
+  // Fetch Early Warnings for class
+  const fetchEarlyWarnings = useCallback(async () => {
+    if (!selectedClass || !activeTASemester) return;
+    
+    setEarlyWarningsLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+      const response = await fetch(
+        `${API_BASE_URL}/api/analytics/timeseries/early-warning/class/${selectedClass}?tahun_ajaran=${activeTASemester.tahun_ajaran}&semester=${activeTASemester.semester}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      const result = await response.json();
+      
+      if (result.success) {
+        setEarlyWarningsData(result);
+      } else {
+        setEarlyWarningsData(null);
+      }
+    } catch (err) {
+      console.error('Error fetching early warnings:', err);
+      setEarlyWarningsData(null);
+    } finally {
+      setEarlyWarningsLoading(false);
+    }
+  }, [selectedClass, activeTASemester]);
 
   useEffect(() => {
     fetchWaliKelasClassList();
@@ -120,8 +183,10 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
   useEffect(() => {
     if (selectedClass) {
       fetchWaliKelasGrades();
+      // Auto-load early warnings when class is selected
+      fetchEarlyWarnings();
     }
-  }, [fetchWaliKelasGrades, selectedClass]);
+  }, [fetchWaliKelasGrades, selectedClass, fetchEarlyWarnings]);
 
   const processGradeData = (grades) => {
     const gradesPerSubjectTable = new Map();
@@ -426,6 +491,18 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
           >
             Nilai Detail
           </Button>
+          <Button
+            variant={activeView === 'earlyWarning' ? 'primary' : 'ghost'}
+            icon="exclamation-triangle"
+            onClick={() => setActiveView('earlyWarning')}
+          >
+            Early Warning
+            {earlyWarningsData && earlyWarningsData.summary && earlyWarningsData.summary.studentsWithWarnings > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold">
+                {earlyWarningsData.summary.studentsWithWarnings}
+              </span>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -451,6 +528,50 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
               <p className="text-xs text-gray-500">Ada mapel {'<'} 60</p>
             </div>
           </div>
+          
+          {/* Early Warning Summary Card */}
+          {earlyWarningsData && earlyWarningsData.summary && earlyWarningsData.summary.studentsWithWarnings > 0 && (
+            <div className="p-6 bg-gradient-to-br from-orange-50 to-red-50 border-l-4 border-red-500 rounded-lg shadow">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-red-900 flex items-center">
+                  <i className="fas fa-exclamation-triangle mr-2"></i>
+                  Early Warning System
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveView('earlyWarning')}
+                >
+                  Lihat Detail
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                <div className="p-3 bg-white rounded shadow-sm">
+                  <p className="text-xs text-gray-600">Siswa Bermasalah</p>
+                  <p className="text-2xl font-bold text-gray-800">{earlyWarningsData.summary.studentsWithWarnings}</p>
+                </div>
+                <div className="p-3 bg-red-100 rounded shadow-sm">
+                  <p className="text-xs text-red-700">Critical</p>
+                  <p className="text-2xl font-bold text-red-800">{earlyWarningsData.summary.criticalCount}</p>
+                </div>
+                <div className="p-3 bg-yellow-100 rounded shadow-sm">
+                  <p className="text-xs text-yellow-700">High Priority</p>
+                  <p className="text-2xl font-bold text-yellow-800">{earlyWarningsData.summary.highCount}</p>
+                </div>
+                <div className="p-3 bg-orange-100 rounded shadow-sm">
+                  <p className="text-xs text-orange-700">Medium</p>
+                  <p className="text-2xl font-bold text-orange-800">{earlyWarningsData.summary.mediumCount}</p>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-700">
+                <i className="fas fa-info-circle mr-1"></i>
+                {earlyWarningsData.summary.studentsWithWarnings} dari {earlyWarningsData.summary.totalStudents} siswa 
+                memerlukan perhatian khusus berdasarkan analisis time series.
+              </p>
+            </div>
+          )}
 
           {studentsBelow60 > 0 && (
             <div className="p-6 bg-yellow-50 border border-yellow-300 rounded-lg">
@@ -934,6 +1055,364 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
               </table>
             </div>
           </div>
+          
+          {/* Time Series Analysis Section */}
+          {timeSeriesLoading && <LoadingSpinner message="Memuat analisis time series..." />}
+          
+          {!timeSeriesLoading && timeSeriesData && timeSeriesData.analysis && timeSeriesData.analysis.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h4 className="text-xl font-bold text-gray-800 flex items-center">
+                <i className="fas fa-chart-line mr-2 text-indigo-600"></i>
+                Analisis Time Series
+              </h4>
+              
+              {timeSeriesData.analysis.map(subject => (
+                <div key={subject.id_mapel} className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <h5 className="text-lg font-semibold text-gray-800 mb-4">{subject.nama_mapel}</h5>
+                  
+                  {/* Data Insufficiency Warning */}
+                  {subject.trend.error && (
+                    <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                      <div className="flex items-center">
+                        <i className="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                        <p className="text-sm text-red-800 font-medium">{subject.trend.message}</p>
+                      </div>
+                      <p className="text-xs text-red-600 mt-2">
+                        Data saat ini: {subject.trend.dataPoints} semester | 
+                        Minimal diperlukan: {subject.trend.requiredPoints} semester
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Trend Analysis */}
+                  {!subject.trend.error && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="p-4 bg-white border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm text-gray-600">Trend</p>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            subject.trend.confidenceColor === 'green' ? 'bg-green-100 text-green-800' :
+                            subject.trend.confidenceColor === 'blue' ? 'bg-blue-100 text-blue-700' :
+                            subject.trend.confidenceColor === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {subject.trend.confidenceLabel}
+                          </span>
+                        </div>
+                        <p className="text-2xl font-bold text-indigo-600 mb-1">
+                          {subject.trend.trend === 'naik_kuat' && '📈📈 Naik Kuat'}
+                          {subject.trend.trend === 'naik_stabil' && '📈 Naik Stabil'}
+                          {subject.trend.trend === 'stabil' && '➡️ Stabil'}
+                          {subject.trend.trend === 'turun_perlahan' && '📉 Turun Perlahan'}
+                          {subject.trend.trend === 'turun_signifikan' && '📉📉 Turun Signifikan'}
+                        </p>
+                        <p className="text-xs text-gray-500">Slope: {subject.trend.slope} poin/semester</p>
+                        <p className="text-xs text-gray-500">Data: {subject.trend.dataPoints} semester</p>
+                      </div>
+                      
+                      <div className="p-4 bg-white border rounded-lg">
+                        <p className="text-sm text-gray-600 mb-2">Interpretasi</p>
+                        <p className="text-sm text-gray-700">{subject.trend.interpretation}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {subject.trend.showWarning && (
+                    <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                      <p className="text-xs text-yellow-800">
+                        <i className="fas fa-info-circle mr-1"></i>
+                        {subject.trend.warningMessage}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Forecast */}
+                  {!subject.forecast.error && (
+                    <div className="p-4 bg-white border rounded-lg mb-4">
+                      <p className="text-sm text-gray-600 mb-2">Prediksi Semester Depan</p>
+                      <p className="text-3xl font-bold text-green-600">
+                        {subject.forecast.forecast}
+                        <span className="text-sm text-gray-500 ml-2">
+                          ±{subject.forecast.confidenceRange.toFixed(1)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Range: {subject.forecast.confidenceLower} - {subject.forecast.confidenceUpper}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-2">Metode: {subject.forecast.method}</p>
+                    </div>
+                  )}
+                  
+                  {subject.forecast.error && (
+                    <div className="p-3 bg-gray-50 border rounded mb-4">
+                      <p className="text-xs text-gray-600">
+                        <i className="fas fa-info-circle mr-1"></i>
+                        {subject.forecast.message}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Early Warnings */}
+                  {!subject.warnings.error && subject.warnings.warnings.length > 0 && (
+                    <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                      <p className="text-sm font-semibold text-red-800 mb-3">
+                        <i className="fas fa-exclamation-triangle mr-2"></i>
+                        Peringatan Terdeteksi ({subject.warnings.warnings.length})
+                      </p>
+                      <div className="space-y-2">
+                        {subject.warnings.warnings.map((warning, idx) => (
+                          <div key={idx} className="p-3 bg-white rounded">
+                            <div className="flex items-start">
+                              <span className="text-xl mr-2">{warning.icon}</span>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-800">{warning.message}</p>
+                                <p className="text-xs text-gray-600 mt-1">{warning.detail}</p>
+                                <p className="text-xs text-gray-700 italic mt-2">
+                                  💡 {warning.recommendation}
+                                </p>
+                              </div>
+                              <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                warning.severity === 'critical' ? 'bg-red-100 text-red-800' :
+                                warning.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {warning.severity.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Early Warning View */}
+      {activeView === 'earlyWarning' && (
+        <div className="space-y-6">
+          {earlyWarningsLoading && <LoadingSpinner message="Memuat early warning data..." />}
+          
+          {!earlyWarningsLoading && !earlyWarningsData && (
+            <div className="p-6 bg-yellow-50 border border-yellow-300 rounded-lg text-center">
+              <i className="fas fa-exclamation-circle text-yellow-600 text-3xl mb-3"></i>
+              <p className="text-gray-700 font-medium">Tidak dapat memuat data early warning.</p>
+              <p className="text-sm text-gray-600 mt-2">Pastikan ada data nilai untuk kelas ini.</p>
+              <Button
+                variant="primary"
+                icon="sync"
+                onClick={fetchEarlyWarnings}
+                className="mt-4"
+              >
+                Coba Lagi
+              </Button>
+            </div>
+          )}
+          
+          {!earlyWarningsLoading && earlyWarningsData && (
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                  <p className="text-sm text-gray-600">Total Siswa</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {earlyWarningsData.summary.totalStudents}
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                  <p className="text-sm text-gray-600">Critical</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {earlyWarningsData.summary.criticalCount}
+                  </p>
+                  <p className="text-xs text-gray-500">Butuh tindakan segera</p>
+                </div>
+                
+                <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                  <p className="text-sm text-gray-600">High Priority</p>
+                  <p className="text-3xl font-bold text-yellow-600">
+                    {earlyWarningsData.summary.highCount}
+                  </p>
+                  <p className="text-xs text-gray-500">Perlu perhatian khusus</p>
+                </div>
+                
+                <div className="p-4 bg-orange-50 border-l-4 border-orange-500 rounded">
+                  <p className="text-sm text-gray-600">Medium</p>
+                  <p className="text-3xl font-bold text-orange-600">
+                    {earlyWarningsData.summary.mediumCount}
+                  </p>
+                  <p className="text-xs text-gray-500">Monitor ketat</p>
+                </div>
+              </div>
+              
+              {/* No Warnings Message */}
+              {earlyWarningsData.summary.totalWarnings === 0 && (
+                <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <i className="fas fa-check-circle text-5xl text-green-500 mb-3"></i>
+                  <h3 className="text-xl font-bold text-green-800 mb-2">Excellent!</h3>
+                  <p className="text-gray-700">Tidak ada early warning terdeteksi di kelas ini.</p>
+                  <p className="text-sm text-gray-600 mt-1">Semua siswa menunjukkan performa yang baik.</p>
+                </div>
+              )}
+              
+              {/* Critical Warnings */}
+              {earlyWarningsData.warnings.critical.length > 0 && (
+                <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+                  <h3 className="text-lg font-bold text-red-900 mb-4 flex items-center">
+                    <i className="fas fa-exclamation-circle mr-2"></i>
+                    Siswa yang Butuh Perhatian SEGERA ({earlyWarningsData.warnings.critical.length})
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {earlyWarningsData.warnings.critical.map((student, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded border-l-4 border-red-500">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-bold text-gray-900">{student.nama_siswa}</h4>
+                            <p className="text-sm text-gray-600">
+                              Bermasalah di {student.subjects.length} mata pelajaran
+                            </p>
+                          </div>
+                          <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">
+                            CRITICAL
+                          </span>
+                        </div>
+                        
+                        {/* List all subjects with warnings */}
+                        <div className="space-y-3 mb-3">
+                          {student.subjects.map((subject, sIdx) => (
+                            <div key={sIdx} className="bg-red-50 p-3 rounded">
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="font-semibold text-gray-800">{subject.nama_mapel}</p>
+                                <span className="text-xs text-gray-500">{subject.dataPoints} semester</span>
+                              </div>
+                              
+                              <div className="space-y-1 mb-2">
+                                {subject.warnings.map((warning, wIdx) => (
+                                  <div key={wIdx} className="flex items-start text-sm">
+                                    <span className="mr-2">{warning.icon}</span>
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-800">{warning.message}</p>
+                                      <p className="text-xs text-gray-600">{warning.detail}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              <div className="flex items-center space-x-2 text-sm">
+                                <span className="text-gray-600 text-xs">Histori:</span>
+                                {subject.history.map((h, hIdx) => (
+                                  <span key={hIdx} className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                    h.nilai < 60 ? 'bg-red-200 text-red-900' :
+                                    h.nilai < 75 ? 'bg-yellow-200 text-yellow-900' :
+                                    'bg-green-200 text-green-900'
+                                  }`}>
+                                    {h.nilai}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          icon="user"
+                          onClick={() => {
+                            const studentData = processedData.summaryTableData.find(s => s.id_siswa === student.id_siswa);
+                            if (studentData) handleStudentClick(studentData);
+                          }}
+                        >
+                          Lihat Detail Siswa
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* High Priority Warnings */}
+              {earlyWarningsData.warnings.high.length > 0 && (
+                <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h3 className="text-lg font-bold text-yellow-900 mb-4 flex items-center">
+                    <i className="fas fa-exclamation-triangle mr-2"></i>
+                    Perhatian Khusus Diperlukan ({earlyWarningsData.warnings.high.length})
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {earlyWarningsData.warnings.high.map((student, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded border-l-4 border-yellow-500">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-bold text-gray-900">{student.nama_siswa}</h4>
+                            <p className="text-xs text-gray-600">
+                              {student.subjects.length} mapel: {student.subjects.map(s => s.nama_mapel).join(', ')}
+                            </p>
+                          </div>
+                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-bold">
+                            HIGH
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-1 mb-2">
+                          {student.subjects.slice(0, 2).map((subject, sIdx) => (
+                            <p key={sIdx} className="text-xs text-gray-700">
+                              {subject.warnings[0]?.icon} <span className="font-medium">{subject.nama_mapel}:</span> {subject.warnings[0]?.message}
+                            </p>
+                          ))}
+                          {student.subjects.length > 2 && (
+                            <p className="text-xs text-gray-500 italic">+{student.subjects.length - 2} mapel lainnya</p>
+                          )}
+                        </div>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const studentData = processedData.summaryTableData.find(s => s.id_siswa === student.id_siswa);
+                            if (studentData) handleStudentClick(studentData);
+                          }}
+                        >
+                          Detail
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Medium Priority Warnings */}
+              {earlyWarningsData.warnings.medium.length > 0 && (
+                <details className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <summary className="cursor-pointer font-semibold text-orange-900">
+                    <i className="fas fa-info-circle mr-2"></i>
+                    Medium Priority ({earlyWarningsData.warnings.medium.length}) - Klik untuk lihat
+                  </summary>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {earlyWarningsData.warnings.medium.map((student, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded text-sm">
+                        <p className="font-medium text-gray-900">{student.nama_siswa}</p>
+                        <p className="text-xs text-gray-600 mb-1">
+                          {student.subjects.length} mapel bermasalah
+                        </p>
+                        <div className="space-y-0.5">
+                          {student.subjects.map((subject, sIdx) => (
+                            <p key={sIdx} className="text-xs text-gray-700">
+                              • {subject.nama_mapel}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </>
+          )}
         </div>
       )}
     </ModuleContainer>

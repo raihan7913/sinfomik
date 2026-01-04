@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controllers/analyticsController');
+const timeSeriesController = require('../controllers/timeSeriesController');
 const { verifyToken, isAdminOrGuru } = require('../middlewares/authMiddleware');
 
 /**
@@ -42,5 +43,21 @@ router.get('/guru/:id_guru', analyticsController.getGuruAnalytics);
 // Compare multiple students (ADMIN & GURU)
 // GET /api/analytics/compare-students?id_siswa_list=1001,1002,1003&id_mapel=1
 router.get('/compare-students', analyticsController.compareStudents);
+
+// ========================================
+// TIME SERIES ANALYSIS ROUTES
+// ========================================
+
+// Get time series analysis for a specific student
+// GET /api/analytics/timeseries/student/:id_siswa?id_mapel=1 (optional: filter by subject)
+router.get('/timeseries/student/:id_siswa', timeSeriesController.getStudentTimeSeriesAnalysis);
+
+// Get early warnings for a class (for wali kelas)
+// GET /api/analytics/timeseries/early-warning/class/:id_kelas?tahun_ajaran=2024/2025&semester=Ganjil
+router.get('/timeseries/early-warning/class/:id_kelas', timeSeriesController.getClassEarlyWarnings);
+
+// Get trend summary for a class
+// GET /api/analytics/timeseries/trend/class/:id_kelas?tahun_ajaran=2024/2025&semester=Ganjil
+router.get('/timeseries/trend/class/:id_kelas', timeSeriesController.getClassTrendSummary);
 
 module.exports = router;
