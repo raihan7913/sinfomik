@@ -179,7 +179,72 @@ exports.exportGradeTemplate = async (req, res) => {
             }
         }
         
-        // If no TP from ATP, use default
+        // 🆕 Get manual TP from database and merge with ATP TP
+        try {
+            // Get id_penugasan first
+            const penugasanRow = await new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT id_penugasan FROM penugasan 
+                     WHERE id_guru = ? AND id_mapel = ? AND id_kelas = ? AND id_ta_semester = ?`,
+                    [id_guru, id_mapel, id_kelas, id_ta_semester],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+            
+            if (penugasanRow && penugasanRow.id_penugasan) {
+                // Get manual TP
+                const manualTps = await new Promise((resolve, reject) => {
+                    db.all(
+                        `SELECT tp_number, tp_name FROM manual_tp 
+                         WHERE id_penugasan = ? AND id_ta_semester = ?
+                         ORDER BY tp_number`,
+                        [penugasanRow.id_penugasan, id_ta_semester],
+                        (err, rows) => {
+                            if (err) reject(err);
+                            else resolve(rows);
+                        }
+                    );
+                });
+                
+                // Merge manual TP with ATP TP
+                if (manualTps && manualTps.length > 0) {
+                    // Get all TP numbers from both sources
+                    const allTpNumbers = new Set();
+                    for (let i = 0; i < tpColumns.length; i++) {
+                        allTpNumbers.add(i + 1);
+                    }
+                    manualTps.forEach(tp => allTpNumbers.add(tp.tp_number));
+                    
+                    // Build final tpColumns array
+                    const maxTpNumber = Math.max(...allTpNumbers);
+                    const mergedTpColumns = [];
+                    
+                    for (let i = 1; i <= maxTpNumber; i++) {
+                        const manualTp = manualTps.find(tp => tp.tp_number === i);
+                        if (manualTp) {
+                            // Use manual TP description (prioritas)
+                            mergedTpColumns.push(manualTp.tp_name);
+                        } else if (i <= tpColumns.length) {
+                            // Use ATP description
+                            mergedTpColumns.push(tpColumns[i - 1]);
+                        } else {
+                            // Default if missing
+                            mergedTpColumns.push(`TP ${i}`);
+                        }
+                    }
+                    
+                    tpColumns = mergedTpColumns;
+                    console.log(`✅ Merged ${manualTps.length} manual TP with ${tpColumns.length - manualTps.length} ATP TP`);
+                }
+            }
+        } catch (err) {
+            console.log('⚠️ Error loading manual TP:', err.message);
+        }
+        
+        // If no TP from ATP or manual, use default
         if (tpColumns.length === 0) {
             tpColumns = ['TP 1', 'TP 2', 'TP 3']; // Default 3 TP
         }
@@ -713,7 +778,7 @@ async function getTpListDirect(db, id_mapel, fase, id_kelas, semesterText) {
             return isNaN(num) ? [] : [num];
         };
 
-        // Filter TP
+        // Filter TP from ATP
         const tpList = rows
             .filter(row => {
                 const kelasExcel = row[kelasIndex];
@@ -749,6 +814,101 @@ async function getTpListDirect(db, id_mapel, fase, id_kelas, semesterText) {
                 kktp: row[kktpIndex] || null,
                 kelas_excel: row[kelasIndex]
             }));
+
+        // 🆕 Get manual TP from database and merge
+        try {
+            // Get id_penugasan first
+            const penugasanRow = await new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT p.id_penugasan FROM penugasan p
+                     WHERE p.id_mapel = ? AND p.id_kelas = ?
+                     LIMIT 1`,
+                    [id_mapel, id_kelas],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+            
+            if (penugasanRow && penugasanRow.id_penugasan) {
+                // Get id_ta_semester matching the semester
+                const taSemesterRow = await new Promise((resolve, reject) => {
+                    db.get(
+                        `SELECT id_ta_semester FROM tahunajaransemester WHERE semester = ?`,
+                        [semesterText],
+                        (err, row) => {
+                            if (err) reject(err);
+                            else resolve(row);
+                        }
+                    );
+                });
+                
+                if (taSemesterRow) {
+                    // Get manual TP
+                    const manualTps = await new Promise((resolve, reject) => {
+                        db.all(
+                            `SELECT tp_number, tp_name FROM manual_tp 
+                             WHERE id_penugasan = ? AND id_ta_semester = ?
+                             ORDER BY tp_number`,
+                            [penugasanRow.id_penugasan, taSemesterRow.id_ta_semester],
+                            (err, rows) => {
+                                if (err) reject(err);
+                                else resolve(rows);
+                            }
+                        );
+                    });
+                    
+                    // Merge manual TP with ATP result
+                    if (manualTps && manualTps.length > 0) {
+                        // Get all TP numbers
+                        const allTpNumbers = new Set();
+                        for (let i = 0; i < tpList.length; i++) {
+                            allTpNumbers.add(i + 1);
+                        }
+                        manualTps.forEach(tp => allTpNumbers.add(tp.tp_number));
+                        
+                        // Build final merged result
+                        const maxTpNumber = Math.max(...allTpNumbers);
+                        const mergedResult = [];
+                        
+                        for (let i = 1; i <= maxTpNumber; i++) {
+                            const manualTp = manualTps.find(tp => tp.tp_number === i);
+                            if (manualTp) {
+                                // Use manual TP (prioritas)
+                                mergedResult.push({
+                                    urutan_tp: i,
+                                    tujuan_pembelajaran: manualTp.tp_name,
+                                    semester: null,
+                                    kktp: 75,
+                                    kelas_excel: kelasRow.nama_kelas
+                                });
+                            } else if (i <= tpList.length) {
+                                // Use ATP
+                                mergedResult.push({
+                                    ...tpList[i - 1],
+                                    urutan_tp: i
+                                });
+                            } else {
+                                // Default
+                                mergedResult.push({
+                                    urutan_tp: i,
+                                    tujuan_pembelajaran: `TP ${i}`,
+                                    semester: null,
+                                    kktp: 75,
+                                    kelas_excel: kelasRow.nama_kelas
+                                });
+                            }
+                        }
+                        
+                        console.log(`✅ getTpListDirect: Merged ${manualTps.length} manual TP with ${tpList.length} ATP TP, total: ${mergedResult.length}`);
+                        return mergedResult;
+                    }
+                }
+            }
+        } catch (err) {
+            console.log('⚠️ Error loading manual TP in getTpListDirect:', err.message);
+        }
 
         return tpList;
     } catch (err) {
