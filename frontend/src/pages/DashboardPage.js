@@ -28,55 +28,60 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
     const [activeTASemester, setActiveTASemester] = useState(null);
     const [loadingTAS, setLoadingTAS] = useState(true);
     const [errorTAS, setErrorTAS] = useState(null);
-    // Detect if mobile on initial load
+    
+    // ✅ FIX: Deteksi mobile yang lebih akurat - gunakan breakpoint 768px dan user-agent
     const [isMobile, setIsMobile] = useState(() => {
         if (typeof window !== 'undefined') {
-            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            return window.innerWidth <= 1024 || isTouchDevice;
+            // Hanya anggap mobile jika:
+            // 1. Lebar < 768px (tablet portrait/mobile), ATAU
+            // 2. Device adalah smartphone (bukan tablet/laptop touchscreen)
+            const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isSmallScreen = window.innerWidth < 768;
+            return isMobileDevice || isSmallScreen;
         }
         return false;
     });
     
-    // Initialize sidebar state: closed on mobile, open on desktop
+    // ✅ FIX: Sidebar default open di laptop (width >= 768px)
     const [isSidebarOpen, setSidebarOpen] = useState(() => {
         if (typeof window !== 'undefined') {
-            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            const mobile = window.innerWidth <= 1024 || isTouchDevice;
-            return !mobile; // Open on desktop, closed on mobile
+            const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isSmallScreen = window.innerWidth < 768;
+            return !(isMobileDevice || isSmallScreen); // Open jika bukan mobile
         }
         return true;
     });
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-    // Handle window resize and detect mobile
+    // ✅ FIX: Handle resize dengan breakpoint yang tepat (768px)
     useEffect(() => {
         const handleResize = () => {
-            // Deteksi mobile: lebar <= 1024px ATAU touchscreen device
-            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            const mobile = window.innerWidth <= 1024 || isTouchDevice;
+            const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isSmallScreen = window.innerWidth < 768;
+            const mobile = isMobileDevice || isSmallScreen;
             
             console.log('Resize detected:', {
                 width: window.innerWidth,
-                isTouchDevice,
+                isMobileDevice,
+                isSmallScreen,
                 mobile,
                 currentSidebarOpen: isSidebarOpen
             });
             
             setIsMobile(mobile);
             
-            // JANGAN auto-close sidebar saat resize, biarkan user yang control
-            // if (!mobile) {
-            //     setSidebarOpen(true); // Always open on desktop
-            // } else {
-            //     setSidebarOpen(false); // Always closed on mobile initially
-            // }
+            // Auto-open sidebar di desktop/laptop (>= 768px) jika belum di-toggle manual
+            if (!mobile && !isSidebarOpen && !isSidebarCollapsed) {
+                console.log('📱→💻 Transisi ke desktop mode, buka sidebar');
+                setSidebarOpen(true);
+            }
         };
 
         window.addEventListener('resize', handleResize);
         handleResize(); // Call once on mount
 
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [isSidebarOpen, isSidebarCollapsed]);
 
     useEffect(() => {
         const fetchActiveTASemester = async () => {
@@ -346,6 +351,31 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
                 <div className="feature-container">
                     {renderContentComponent()}
                 </div>
+                
+                {/* 🐛 Debug Indicator (untuk testing - bisa dihapus di production) */}
+                {process.env.NODE_ENV === 'development' && (
+                    <div 
+                        style={{
+                            position: 'fixed',
+                            bottom: '1rem',
+                            right: '1rem',
+                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                            color: 'white',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.75rem',
+                            fontFamily: 'monospace',
+                            zIndex: 9999,
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            lineHeight: '1.5'
+                        }}
+                    >
+                        <div>🖥️ Width: {typeof window !== 'undefined' ? window.innerWidth : 0}px</div>
+                        <div>📱 Mobile: {isMobile ? 'Yes' : 'No'}</div>
+                        <div>📂 Sidebar: {isSidebarOpen ? 'Open' : 'Closed'}</div>
+                        <div>↔️ Collapsed: {isSidebarCollapsed ? 'Yes' : 'No'}</div>
+                    </div>
+                )}
             </div>
         </div>
     );

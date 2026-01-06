@@ -389,7 +389,8 @@ html, body, #root {
    RESPONSIVE DESIGN
    =========================== */
 
-@media (max-width: 1024px) {
+/* ✅ FIX: Mobile view (< 768px) - sidebar tersembunyi secara default */
+@media (max-width: 768px) {
     .mobile-menu-btn {
         display: flex;
     }
@@ -401,11 +402,16 @@ html, body, #root {
     .app-sidebar.open {
         transform: translateX(0);
     }
+    
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
 
     .main-content-area {
         margin-left: 0;
         width: 100%;
-        padding: 1rem;
+        padding: 0.75rem;
     }
 
     .main-content-area.sidebar-collapsed {
@@ -424,25 +430,49 @@ html, body, #root {
     }
 
     .dashboard-header h1 {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
 
+    .feature-container {
+        padding: 1rem;
+    }
+}
+
+/* ✅ Tablet landscape & Laptop small (768-1024px) - sidebar tetap visible */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .app-sidebar {
+        width: 240px; /* Sedikit lebih kecil di tablet/laptop kecil */
+    }
+    
+    .main-content-area {
+        margin-left: 240px;
+    }
+    
+    .main-content-area.sidebar-collapsed {
+        margin-left: 64px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+    
     .feature-container {
         padding: 1.5rem;
     }
 }
 
-@media (max-width: 768px) {
-    .dashboard-header h1 {
-        font-size: 1.25rem;
+/* ✅ Desktop (> 1024px) - sidebar full width */
+@media (min-width: 1025px) {
+    .app-sidebar {
+        width: 280px;
     }
-
+    
     .main-content-area {
-        padding: 0.75rem;
+        margin-left: 280px;
     }
-
-    .feature-container {
-        padding: 1rem;
+    
+    .main-content-area.sidebar-collapsed {
+        margin-left: 64px;
     }
 }
 
