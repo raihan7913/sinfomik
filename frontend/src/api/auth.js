@@ -29,6 +29,8 @@ export const loginUser = async (username, password, userType) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('isSuperAdmin', (data.user && data.user.role === 'superadmin') ? 'true' : 'false');
       console.log('✅ Login successful, token stored as HTTP-only cookie');
+      console.log('🍪 Cookies after login:', document.cookie); // Debug: check if any cookies visible
+      console.log('📱 User agent:', navigator.userAgent); // Debug: check device/browser
       
       return { success: true, message: data.message, user: data.user };
     } else { // Status kode 4xx atau 5xx

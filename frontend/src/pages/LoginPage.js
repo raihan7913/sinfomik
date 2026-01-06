@@ -80,11 +80,12 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex items-center justify-center p-4 animate-fadeIn overflow-x-auto overflow-y-auto">
-      <div className="container mx-auto px-4 min-w-[320px]">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* Left Side - Hero Image */}
+    <div className="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen overflow-y-auto overflow-x-hidden animate-fadeIn">
+      <div className="flex items-center justify-center p-4 py-8 min-h-screen">
+        <div className="container mx-auto px-4 w-full min-w-[320px]">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              {/* Left Side - Hero Image */}
             <div className="hidden md:block rounded-3xl overflow-hidden shadow-2xl relative transform hover:scale-[1.02] transition-transform duration-500">
               <img src="\bglogin.jpg" alt="Sekolah Bhinekas" className="w-full h-[500px] object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/80 via-indigo-600/40 to-transparent"></div>
