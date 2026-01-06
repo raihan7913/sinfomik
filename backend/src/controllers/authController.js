@@ -5,6 +5,8 @@ const bcrypt = require('bcryptjs'); // Untuk membandingkan hash password (jika m
 const jwt = require('jsonwebtoken'); // Untuk JWT authentication
 const JWT_SECRET = process.env.JWT_SECRET || 'sinfomik_super_secret_key_2025_change_in_production_please';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '5h'; // Testing: 5h, Production: 24h
+// ✅ Cookie sameSite policy: 'none' for Azure cross-origin, 'lax' for VM same-origin
+const COOKIE_SAME_SITE = process.env.COOKIE_SAME_SITE || 'none';
 
 // Helper untuk hashing password (sesuai dengan yang digunakan di Python hashlib.sha256)
 function hashPasswordPythonStyle(password) {
@@ -59,21 +61,19 @@ exports.login = (req, res) => {
         });
         
         // ✅ Clear old cookie first to prevent conflicts
-        const cookieSameSite = process.env.COOKIE_SAME_SITE || 'none';
         res.clearCookie('authToken', {
             httpOnly: true,
             secure: true,
-            sameSite: cookieSameSite,
+            sameSite: COOKIE_SAME_SITE,
             path: '/'
         });
         
         // Set JWT token sebagai HTTP-only cookie (XSS protection)
         // ✅ Flexible deployment: Azure (cross-origin) vs VM (same-origin)
-        const cookieSameSite = process.env.COOKIE_SAME_SITE || 'none'; // 'none' for Azure, 'lax' for VM
         res.cookie('authToken', token, {
             httpOnly: true,      // Tidak bisa diakses via JavaScript (XSS protection)
             secure: true,        // ✅ ALWAYS true for HTTPS (Azure & VM production)
-            sameSite: cookieSameSite,  // ✅ 'none' (Azure cross-origin) or 'lax' (VM same-origin)
+            sameSite: COOKIE_SAME_SITE,  // ✅ 'none' (Azure cross-origin) or 'lax' (VM same-origin)
             maxAge: 5 * 60 * 60 * 1000,  // 5 hours (sesuai JWT_EXPIRES_IN)
             path: '/'            // ✅ Explicit path for better compatibility
         });
@@ -218,21 +218,19 @@ exports.login = (req, res) => {
             });
             
             // ✅ Clear old cookie first to prevent conflicts
-            const cookieSameSite = process.env.COOKIE_SAME_SITE || 'none';
             res.clearCookie('authToken', {
                 httpOnly: true,
                 secure: true,
-                sameSite: cookieSameSite,
+                sameSite: COOKIE_SAME_SITE,
                 path: '/'
             });
             
             // Set JWT token sebagai HTTP-only cookie (XSS protection)
             // ✅ Flexible deployment: Azure (cross-origin) vs VM (same-origin)
-            const cookieSameSite = process.env.COOKIE_SAME_SITE || 'none'; // 'none' for Azure, 'lax' for VM
             res.cookie('authToken', token, {
                 httpOnly: true,      // Tidak bisa diakses via JavaScript (XSS protection)
                 secure: true,        // ✅ ALWAYS true for HTTPS (Azure & VM production)
-                sameSite: cookieSameSite,  // ✅ 'none' (Azure cross-origin) or 'lax' (VM same-origin)
+                sameSite: COOKIE_SAME_SITE,  // ✅ 'none' (Azure cross-origin) or 'lax' (VM same-origin)
                 maxAge: 5 * 60 * 60 * 1000,  // 5 hours (sesuai JWT_EXPIRES_IN)
                 path: '/'            // ✅ Explicit path for better compatibility
             });
@@ -312,11 +310,10 @@ exports.logout = (req, res) => {
     
     // Clear the HTTP-only cookie
     // ✅ Flexible deployment: match sameSite with cookie creation
-    const cookieSameSite = process.env.COOKIE_SAME_SITE || 'none';
     res.clearCookie('authToken', {
         httpOnly: true,
         secure: true,
-        sameSite: cookieSameSite,  // ✅ Match cookie creation settings
+        sameSite: COOKIE_SAME_SITE,  // ✅ Match cookie creation settings
         path: '/'
     });
     
