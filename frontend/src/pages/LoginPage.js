@@ -87,11 +87,11 @@ function LoginPage({ onLogin }) {
             <div className="grid md:grid-cols-2 gap-8 items-center">
               {/* Left Side - Hero Image */}
             <div className="hidden md:block rounded-3xl overflow-hidden shadow-2xl relative transform hover:scale-[1.02] transition-transform duration-500">
-              <img src="\bglogin.jpg" alt="Sekolah Bhinekas" className="w-full h-[500px] object-cover" />
+              <img src="\bglogin.jpg" alt="Sekolah Binekas" className="w-full h-[500px] object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/80 via-indigo-600/40 to-transparent"></div>
               <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
                 <div className="backdrop-blur-sm bg-white/10 rounded-2xl p-6">
-                  <h2 className="text-3xl font-bold mb-2">Sekolah Bhinekas</h2>
+                  <h2 className="text-3xl font-bold mb-2">Sekolah Binekas</h2>
                   <p className="text-lg opacity-90">Membangun Generasi Cerdas dan Berkarakter</p>
                   <div className="flex gap-4 mt-4">
                     <div className="flex items-center gap-2">
@@ -224,7 +224,7 @@ function LoginPage({ onLogin }) {
               )}
 
               <div className="mt-8 text-center text-sm text-gray-500">
-                <p className="font-medium">© 2025 Sekolah Bhinekas</p>
+                <p className="font-medium">© 2025 Sekolah Binekas</p>
                 <p className="mt-1">Sistem Informasi Akademik v2.0</p>
               </div>
             </div>

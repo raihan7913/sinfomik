@@ -15,11 +15,8 @@ const ClassPromote = () => {
   const [taSemesters, setTASemesters] = useState([]);
   const [fromTASemesterId, setFromTASemesterId] = useState('');
   const [toTASemesterId, setToTASemesterId] = useState('');
-  const [fromKelasId, setFromKelasId] = useState('');
-  const [toKelasId, setToKelasId] = useState('');
-  const [kelasFrom, setKelasFrom] = useState([]);
-  const [kelasTo, setKelasTo] = useState([]);
-  const [studentsInFromKelas, setStudentsInFromKelas] = useState([]);
+  const [studentsGroupedByClass, setStudentsGroupedByClass] = useState([]);
+  const [totalStudents, setTotalStudents] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
@@ -35,7 +32,9 @@ const ClassPromote = () => {
       if (taData.length > 0) {
         const currentActive = taData.find(ta => ta.is_aktif);
         setFromTASemesterId(currentActive ? currentActive.id_ta_semester : taData[0].id_ta_semester);
-        setToTASemesterId(currentActive ? currentActive.id_ta_semester : taData[0].id_ta_semester);
+        // Default to next semester or same if only one
+        const nextSemester = taData.find(ta => ta.id_ta_semester !== (currentActive ? currentActive.id_ta_semester : taData[0].id_ta_semester));
+        setToTASemesterId(nextSemester ? nextSemester.id_ta_semester : (currentActive ? currentActive.id_ta_semester : taData[0].id_ta_semester));
       }
     } catch (err) {
       setError(err.message);
@@ -44,46 +43,39 @@ const ClassPromote = () => {
     }
   };
 
-  const fetchKelasForSemester = async (semesterId, setKelasState) => {
-    if (!semesterId) {
-      setKelasState([]);
+  const fetchAllStudentsInSemester = async () => {
+    if (!fromTASemesterId) {
+      setStudentsGroupedByClass([]);
+      setTotalStudents(0);
       return;
     }
+    
     try {
-      const data = await adminApi.getKelas(semesterId);
-      setKelasState(data);
-    } catch (err) {
-      console.error("Error fetching classes:", err);
-      setKelasState([]);
-    }
-  };
-
-  const fetchStudentsForPromotion = async () => {
-    if (fromKelasId && fromTASemesterId) {
-      try {
-        const data = await adminApi.getSiswaInKelas(fromKelasId, fromTASemesterId);
-        setStudentsInFromKelas(data);
-      } catch (err) {
-        console.error("Error fetching students for promotion:", err);
-        setStudentsInFromKelas([]);
-      }
-    } else {
-      setStudentsInFromKelas([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  useEffect(() => {
-    fetchKelasForSemester(fromTASemesterId, setKelasFrom);
-  }, [fromTASemesterId]);
-
-  useEffect(() => {
-    if (kelasFrom.length > 0 && !fromKelasId) {
-      setFromKelasId(kelasFrom[0].id_kelas);
-    } else if (kelasFrom.length === 0) {
+      setLoading(true);
+      // Fetch all classes in source semester
+      const kelasData = await adminApi.getKelas(fromTASemesterId);
+      
+      // Fetch students for each class
+      const classPromises = kelasData.map(async (kelas) => {
+        try {
+          const students = await adminApi.getSiswaInKelas(kelas.id_kelas, fromTASemesterId);
+          return {
+            kelas: kelas,
+            students: students,
+            count: students.length
+          };
+        } catch (err) {
+          console.error(`Error fetching students for class ${kelas.nama_kelas}:`, err);
+          return {
+            kelas: kelas,
+            students: [],
+            count: 0
+          };
+        }
+      });
+      
+      conAllStudentsInSemester();
+  }, [sFrom.length === 0) {
       setFromKelasId('');
     }
   }, [kelasFrom, fromKelasId]);
@@ -139,35 +131,40 @@ const ClassPromote = () => {
       const response = await adminApi.promoteStudents(studentIdsToPromote, toKelasId, toTASemesterId);
       console.log('✅ Promotion response:', response);
       showMessage(response.message, 'success');
-      
-      // Wait a moment then refresh data
-      setTimeout(() => {
-        fetchStudentsForPromotion();
-      }, 500);
-    } catch (err) {
-      console.error('❌ Promotion error:', err);
-      showMessage(err.message, 'error');
-    } finally {
-      setShowConfirm(false);
+      TASemesterId || !toTASemesterId || totalStudents === 0) {
+      showMessage('Lengkapi pilihan semester dan pastikan ada siswa di semester sumber.', 'error');
+      return;
     }
+    if (fromTASemesterId === toTASemesterId) {
+      showMessage('Semester sumber dan tujuan tidak boleh sama.', 'error');
+      return;
+    }
+    setShowConfirm(true);
   };
 
-  const studentColumns = [
+  const handlePromoteStudents = async () => {
+    try {
+      leclassColumns = [
     {
-      key: 'id_siswa',
-      label: 'NIS',
-      render: (value) => <span className="font-medium">{value}</span>
-    },
-    {
-      key: 'nama_siswa',
-      label: 'Nama Siswa',
+      key: 'kelas',
+      label: 'Kelas',
       render: (value) => (
         <div className="flex items-center">
-          <div className="bg-gradient-to-r from-blue-400 to-indigo-500 p-2 rounded-full mr-3">
-            <i className="fas fa-user text-white text-sm"></i>
+          <div className="bg-gradient-to-r from-purple-400 to-indigo-500 p-2 rounded-full mr-3">
+            <i className="fas fa-door-open text-white text-sm"></i>
           </div>
-          <span className="font-medium">{value}</span>
+          <span className="font-medium">{value.nama_kelas}</span>
         </div>
+      )
+    },
+    {
+      key: 'count',
+      label: 'Jumlah Siswa',
+      render: (value) => (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          <i className="fas fa-users mr-1"></i>
+          {value} siswa
+        </span>
       )
     },
     {
@@ -176,27 +173,36 @@ const ClassPromote = () => {
       render: () => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           <i className="fas fa-check-circle mr-1"></i>
-          Siap dipromosikan
+          Siap dipindahkan
         </span>
       )
     }
   ];
 
-  const fromClass = kelasFrom.find(k => k.id_kelas === fromKelasId);
-  const toClass = kelasTo.find(k => k.id_kelas === toKelasId);
-  const fromSemester = taSemesters.find(t => t.id_ta_semester === fromTASemesterId);
-  const toSemester = taSemesters.find(t => t.id_ta_semester === toTASemesterId);
-
-  const statsData = [
-    {
-      label: 'Siswa yang akan dipromosikan',
-      value: studentsInFromKelas.length,
+      render: () => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <i cTotal Siswa',
+      value: totalStudents,
       icon: 'user-graduate',
       gradient: 'from-blue-400 to-indigo-500'
     },
     {
-      label: 'Kelas Sumber',
-      value: fromClass?.nama_kelas || '-',
+      label: 'Jumlah Kelas',
+      value: studentsGroupedByClass.length,
+      icon: 'door-open',
+      gradient: 'from-purple-400 to-pink-500'
+    },
+    {
+      label: 'Semester Sumber',
+      value: fromSemester?.semester || '-',
+      icon: 'arrow-circle-right',
+      gradient: 'from-orange-400 to-red-500'
+    },
+    {
+      label: 'Semester Tujuan',
+      value: toSemester?.semester || '-',
+      icon: 'arrow-circle-left',
+      gradient: 'from-emerald-400 to-cyan',
       icon: 'arrow-circle-right',
       gradient: 'from-orange-400 to-red-500'
     },
@@ -214,17 +220,17 @@ const ClassPromote = () => {
     }
   ];
 
-  return (
-    <ModuleContainer>
-      <PageHeader
-        icon="level-up-alt"
-        title="Pindah Semester Kelas"
-        subtitle="Memindahkan siswa ke kelas pada semester berikutnya"
-        badge={`${studentsInFromKelas.length} siswa siap dipindahkan`}
+  return (exchange-alt"
+        title="Pindah Semester Massal"
+        subtitle="Memindahkan semua siswa ke semester berikutnya (kelas tetap sama)"
+        badge={`${totalStudents} siswa siap dipindahkan`}
         action={
           <Button
             variant="secondary"
             icon="sync-alt"
+            onClick={() => {
+              fetchInitialData();
+              fetchAllStudentsInSemester
             onClick={() => {
               fetchInitialData();
               fetchStudentsForPromotion();
@@ -271,92 +277,70 @@ const ClassPromote = () => {
 
       {!loading && !error && (
         <>
-          {/* Info Alert */}
-          <StatusMessage 
-            type="info"
-            message="Gunakan fitur ini untuk hanya untuk mempromosikan siswa ke kelas yang sama dengan tahun ajaran yang sama namun semester yang berbeda."
+          {/* Info AlFitur ini akan memindahkan SEMUA siswa dari semester yang dipilih ke semester tujuan. Setiap siswa akan tetap berada di kelas yang sama, hanya pindah semester saja."
             icon="info-circle"
             className="mb-8"
           />
 
-          {/* Promotion Form */}
+          {/* Semester Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8">
-            {/* Source Class */}
+            {/* Source Semester */}
             <FormSection 
-              title="Sumber" 
-              icon="arrow-circle-right"
+              title="Semester Sumber" 
+              icon="calendar-alt"
               variant="warning"
             >
-              <div className="space-y-4">
-                <div className="form-group">
-                  <label>
-                    <i className="fas fa-calendar-alt mr-2 text-gray-500"></i>
-                    Tahun Ajaran & Semester
-                  </label>
-                  <select 
-                    value={fromTASemesterId} 
-                    onChange={(e) => setFromTASemesterId(parseInt(e.target.value))}
-                  >
-                    {taSemesters.map(ta => (
-                      <option key={ta.id_ta_semester} value={ta.id_ta_semester}>
-                        {ta.tahun_ajaran} {ta.semester}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <i className="fas fa-door-open mr-2 text-gray-500"></i>
-                    Kelas Asal
-                  </label>
-                  <select 
-                    value={fromKelasId} 
-                    onChange={(e) => setFromKelasId(parseInt(e.target.value))}
-                  >
-                    {kelasFrom.map(k => (
-                      <option key={k.id_kelas} value={k.id_kelas}>{k.nama_kelas}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="form-group">
+                <label>
+                  <i className="fas fa-calendar-check mr-2 text-gray-500"></i>
+                  Tahun Ajaran & Semester Sumber
+                </label>
+                <select 
+                  value={fromTASemesterId} 
+                  onChange={(e) => setFromTASemesterId(parseInt(e.target.value))}
+                >
+                  {taSemesters.map(ta => (
+                    <option key={ta.id_ta_semester} value={ta.id_ta_semester}>
+                      {ta.tahun_ajaran} - {ta.semester}
+                    </option>
+                  ))}
+                </select>
+                {fromSemester && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    <i className="fas fa-info-circle mr-1"></i>
+                    Semua siswa di semester ini akan dipindahkan
+                  </p>
+                )}
               </div>
             </FormSection>
 
-            {/* Destination Class */}
+            {/* Destination Semester */}
             <FormSection 
-              title="Tujuan" 
-              icon="arrow-circle-left"
+              title="Semester Tujuan" 
+              icon="calendar-check"
               variant="success"
             >
-              <div className="space-y-4">
-                <div className="form-group">
-                  <label>
-                    <i className="fas fa-calendar-alt mr-2 text-gray-500"></i>
-                    Tahun Ajaran & Semester
-                  </label>
-                  <select 
-                    value={toTASemesterId} 
-                    onChange={(e) => setToTASemesterId(parseInt(e.target.value))}
-                  >
-                    {taSemesters.map(ta => (
-                      <option key={ta.id_ta_semester} value={ta.id_ta_semester}>
-                        {ta.tahun_ajaran} {ta.semester}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <i className="fas fa-door-open mr-2 text-gray-500"></i>
-                    Kelas Tujuan
-                  </label>
-                  <select 
-                    value={toKelasId} 
-                    onChange={(e) => setToKelasId(parseInt(e.target.value))}
-                  >
-                    {kelasTo.map(k => (
-                      <option key={k.id_kelas} value={k.id_kelas}>{k.nama_kelas}</option>
+              <div className="form-group">
+                <label>
+                  <i className="fas fa-calendar-plus mr-2 text-gray-500"></i>
+                  Tahun Ajaran & Semester Tujuan
+                </label>
+                <select 
+                  value={toTASemesterId} 
+                  onChange={(e) => setToTASemesterId(parseInt(e.target.value))}
+                >
+                  {taSemesters.map(ta => (
+                    <option key={ta.id_ta_semester} value={ta.id_ta_semester}>
+                      {ta.tahun_ajaran} - {ta.semester}
+                    </option>
+                  ))}
+                </select>
+                {toSemester && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    <i className="fas fa-info-circle mr-1"></i>
+                    Siswa akan dipindahkan ke semester ini (kelas tetap sama)
+                  </p>
+                )}<option key={k.id_kelas} value={k.id_kelas}>{k.nama_kelas}</option>
                     ))}
                   </select>
                 </div>
@@ -386,31 +370,54 @@ const ClassPromote = () => {
             </div>
 
             {studentsInFromKelas.length > 0 ? (
+              Classes List */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center">
+                <i className="fas fa-door-open mr-3 text-purple-500 text-2xl sm:text-3xl"></i>
+                Kelas di Semester Sumber
+                {fromSemester && (
+                  <span className="ml-3 text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
+                    {fromSemester.tahun_ajaran} - {fromSemester.semester}
+                  </span>
+                )}
+              </h3>
+              <div className="bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl px-4 py-2 text-white">
+                <div className="flex items-center">
+                  <i className="fas fa-user-friends mr-2"></i>
+                  <span className="font-bold text-lg">{totalStudents}</span>
+                  <span className="ml-1 text-sm">Siswa</span>
+                </div>
+              </div>
+            </div>
+
+            {studentsGroupedByClass.length > 0 ? (
               <Table
-                columns={studentColumns}
-                data={studentsInFromKelas}
+                columns={classColumns}
+                data={studentsGroupedByClass}
               />
             ) : (
               <EmptyState
-                icon="user-slash"
-                title="Tidak ada siswa"
-                message="Tidak ada siswa di kelas sumber yang dipilih."
+                icon="inbox"
+                title="Tidak ada kelas"
+                message="Tidak ada kelas dengan siswa di semester yang dipilih."
               />
             )}
           </div>
 
           {/* Promotion Summary */}
-          {studentsInFromKelas.length > 0 && fromClass && toClass && (
+          {totalStudents > 0 && fromSemester && toSemester && (
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 mb-8">
               <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
                 <i className="fas fa-clipboard-check mr-2 text-blue-500"></i>
-                Ringkasan Promosi
+                Ringkasan Pemindahan Semester
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded-lg">
                   <p className="text-sm text-gray-500 mb-1">Dari</p>
-                  <p className="font-bold text-orange-600">{fromClass.nama_kelas}</p>
-                  <p className="text-xs text-gray-500">{fromSemester?.tahun_ajaran} - {fromSemester?.semester}</p>
+                  <p className="font-bold text-orange-600">{fromSemester.tahun_ajaran}</p>
+                  <p className="text-lg font-bold text-gray-800">{fromSemester.semester}</p>
+                  <p className="text-xs text-gray-500 mt-1">{studentsGroupedByClass.length} kelas</p>
                 </div>
                 <div className="flex items-center justify-center">
                   <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-3 rounded-full">
@@ -419,37 +426,22 @@ const ClassPromote = () => {
                 </div>
                 <div className="bg-white p-4 rounded-lg">
                   <p className="text-sm text-gray-500 mb-1">Ke</p>
-                  <p className="font-bold text-green-600">{toClass.nama_kelas}</p>
-                  <p className="text-xs text-gray-500">{toSemester?.tahun_ajaran} - {toSemester?.semester}</p>
+                  <p className="font-bold text-green-600">{toSemester.tahun_ajaran}</p>
+                  <p className="text-lg font-bold text-gray-800">{toSemester.semester}</p>
+                  <p className="text-xs text-gray-500 mt-1">Kelas tetap sama</p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Promote Button */}
-          <div className="flex justify-center">
-            <Button
-              variant="primary"
-              icon="user-graduate"
+              <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <i className="fas fa-info-circle mr-2"></i>
+                  <strong>{totalStudents} siswa</strong> dari <strong>{studentsGroupedByClass.length} kelas</strong> akan dipindahkan ke semester <strong>{toSemester.semester}</strong> dengan tetap berada di kelas yang sama.
+                </pg
+          show={showexchange-alt"
               onClick={handlePromoteClick}
-              disabled={studentsInFromKelas.length === 0 || !toKelasId}
+              disabled={totalStudents === 0 || fromTASemesterId === toTASemesterId}
               className="px-8 py-4 text-lg"
             >
-              Promosikan {studentsInFromKelas.length} Siswa
-            </Button>
-          </div>
-        </>
-      )}
-
-      {/* Confirmation Dialog */}
-      {showConfirm && (
-        <ConfirmDialog
-          show={showConfirm}
-          title="Konfirmasi Promosi Siswa"
-          message={`Apakah Anda yakin ingin mempromosikan ${studentsInFromKelas.length} siswa dari ${fromClass?.nama_kelas} (${fromSemester?.tahun_ajaran} - ${fromSemester?.semester}) ke ${toClass?.nama_kelas} (${toSemester?.tahun_ajaran} - ${toSemester?.semester})? Aksi ini akan memindahkan semua siswa ke kelas tujuan.`}
-          confirmText="Promosikan Siswa"
-          cancelText="Batal"
-          onConfirm={handlePromoteStudents}
+              Pindahkan {totalStudents} Siswa ke Semester Baru
           onCancel={() => setShowConfirm(false)}
           variant="primary"
         />
@@ -459,3 +451,6 @@ const ClassPromote = () => {
 };
 
 export default ClassPromote;
+emindahan Semester Massal"
+          message={`Apakah Anda yakin ingin memindahkan ${totalStudents} siswa dari ${studentsGroupedByClass.length} kelas di semester ${fromSemester?.semester} (${fromSemester?.tahun_ajaran}) ke semester ${toSemester?.semester} (${toSemester?.tahun_ajaran})? Setiap siswa akan tetap berada di kelas yang sama.`}
+          confirmText="Pindahkan Semua
