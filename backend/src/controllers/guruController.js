@@ -108,21 +108,44 @@ exports.addOrUpdateNewGrade = (req, res) => {
 
         if (row) {
             // Update if already exists
+            console.log(`🔄 Updating nilai - id_nilai: ${row.id_nilai}, jenis: ${jenis_nilai}, nilai: ${nilai}`);
+            
             db.run(`
                 UPDATE nilai SET nilai = ?, keterangan = ?, tanggal_input = ?
                 WHERE id_nilai = ?
             `, [nilai, keterangan, tanggal_input, row.id_nilai], function(err) {
-                if (err) return res.status(400).json({ message: err.message });
-                res.status(200).json({ message: 'Nilai berhasil diperbarui.', id: row.id_nilai, changes: this.changes });
+                if (err) {
+                    console.error('❌ Update failed:', err.message);
+                    return res.status(400).json({ message: err.message });
+                }
+                
+                console.log(`✅ Update success - changes: ${this.changes}`);
+                res.status(200).json({ 
+                    message: 'Nilai berhasil diperbarui.', 
+                    id: row.id_nilai, 
+                    changes: this.changes,
+                    updated: true
+                });
             });
         } else {
             // Insert if not exists
+            console.log(`➕ Inserting new nilai - jenis: ${jenis_nilai}, nilai: ${nilai}`);
+            
             db.run(`
                 INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan], function(err) {
-                if (err) return res.status(400).json({ message: err.message });
-                res.status(201).json({ message: 'Nilai berhasil ditambahkan.', id: this.lastID });
+                if (err) {
+                    console.error('❌ Insert failed:', err.message);
+                    return res.status(400).json({ message: err.message });
+                }
+                
+                console.log(`✅ Insert success - id: ${this.lastID}`);
+                res.status(201).json({ 
+                    message: 'Nilai berhasil ditambahkan.', 
+                    id: this.lastID,
+                    updated: false
+                });
             });
         }
     });
