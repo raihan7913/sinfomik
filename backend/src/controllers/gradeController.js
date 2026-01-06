@@ -463,7 +463,7 @@ exports.importGradesFromExcel = async (req, res) => {
                             // Update existing
                             await new Promise((resolve, reject) => {
                                 db.run(
-                                    `UPDATE nilai SET nilai = ?, tanggal_input = datetime('now'), keterangan = ?
+                                    `UPDATE nilai SET nilai = ?, tanggal_input = CURRENT_TIMESTAMP, keterangan = ?
                                      WHERE id_nilai = ?`,
                                     [nilai, `TP ${tpNum}`, existingTp.id_nilai],
                                     function(err) {
@@ -477,7 +477,7 @@ exports.importGradesFromExcel = async (req, res) => {
                             await new Promise((resolve, reject) => {
                                 db.run(
                                     `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
-                                     VALUES (?, ?, ?, ?, ?, 'TP', ?, ?, datetime('now'), ?)`,
+                                     VALUES (?, ?, ?, ?, ?, 'TP', ?, ?, CURRENT_TIMESTAMP, ?)`,
                                     [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, tpNum, nilai, `TP ${tpNum}`],
                                     function(err) {
                                         if (err) reject(err);
@@ -525,7 +525,7 @@ exports.importGradesFromExcel = async (req, res) => {
                         // Update existing
                         await new Promise((resolve, reject) => {
                             db.run(
-                                `UPDATE nilai SET nilai = ?, tanggal_input = datetime('now'), keterangan = 'UAS'
+                                `UPDATE nilai SET nilai = ?, tanggal_input = CURRENT_TIMESTAMP, keterangan = 'UAS'
                                  WHERE id_nilai = ?`,
                                 [nilai, existingUas.id_nilai],
                                 function(err) {
@@ -539,7 +539,7 @@ exports.importGradesFromExcel = async (req, res) => {
                         await new Promise((resolve, reject) => {
                             db.run(
                                 `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
-                                 VALUES (?, ?, ?, ?, ?, 'UAS', NULL, ?, datetime('now'), 'UAS')`,
+                                 VALUES (?, ?, ?, ?, ?, 'UAS', NULL, ?, CURRENT_TIMESTAMP, 'UAS')`,
                                 [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, nilai],
                                 function(err) {
                                     if (err) reject(err);
