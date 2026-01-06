@@ -35,8 +35,16 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
             // Hanya anggap mobile jika:
             // 1. Lebar < 768px (tablet portrait/mobile), ATAU
             // 2. Device adalah smartphone (bukan tablet/laptop touchscreen)
+            // ✅ iPad landscape (>768px) akan dianggap desktop karena width check
             const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const isSmallScreen = window.innerWidth < 768;
+            
+            // ✅ Tambahan: Jika iPad tapi width >= 768px (landscape), treat as desktop
+            const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIPad && window.innerWidth >= 768) {
+                return false; // iPad landscape = desktop mode
+            }
+            
             return isMobileDevice || isSmallScreen;
         }
         return false;
@@ -51,7 +59,17 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
                 
                 const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const isSmallScreen = window.innerWidth < 768;
-                const isMobileNow = isMobileDevice || isSmallScreen;
+                
+                // ✅ iPad landscape check
+                const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                const isIPadLandscape = isIPad && window.innerWidth >= 768;
+                
+                let isMobileNow;
+                if (isIPadLandscape) {
+                    isMobileNow = false; // iPad landscape = desktop
+                } else {
+                    isMobileNow = isMobileDevice || isSmallScreen;
+                }
                 
                 // Di mobile: selalu closed
                 // Di desktop: gunakan preference jika ada, default open
@@ -65,7 +83,9 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
                 // Fallback: mobile = closed, desktop = open
                 const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const isSmallScreen = window.innerWidth < 768;
-                return !(isMobileDevice || isSmallScreen);
+                const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                const isIPadLandscape = isIPad && window.innerWidth >= 768;
+                return isIPadLandscape || !(isMobileDevice || isSmallScreen);
             }
         }
         return true;
@@ -108,19 +128,26 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
         const handleResize = () => {
             const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const isSmallScreen = window.innerWidth < 768;
-            const mobile = isMobileDevice || isSmallScreen;
+            
+            // ✅ iPad landscape check
+            const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isIPadLandscape = isIPad && window.innerWidth >= 768;
+            
+            const mobile = isIPadLandscape ? false : (isMobileDevice || isSmallScreen);
             
             console.log('Resize detected:', {
                 width: window.innerWidth,
                 isMobileDevice,
                 isSmallScreen,
+                isIPad,
+                isIPadLandscape,
                 mobile,
                 currentSidebarOpen: isSidebarOpen
             });
             
             setIsMobile(mobile);
             
-            // Auto-open sidebar di desktop/laptop (>= 768px) jika belum di-toggle manual
+            // Auto-open sidebar di desktop/laptop (>= 768px) atau iPad landscape jika belum di-toggle manual
             if (!mobile && !isSidebarOpen && !isSidebarCollapsed) {
                 console.log('📱→💻 Transisi ke desktop mode, buka sidebar');
                 setSidebarOpen(true);
