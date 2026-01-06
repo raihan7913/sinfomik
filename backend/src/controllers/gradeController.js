@@ -445,19 +445,47 @@ exports.importGradesFromExcel = async (req, res) => {
                     }
                     
                     try {
-                        await new Promise((resolve, reject) => {
-                            db.run(
-                                `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
-                                 VALUES (?, ?, ?, ?, ?, 'TP', ?, ?, NOW(), ?)
-                                 ON CONFLICT(id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp)
-                                 DO UPDATE SET nilai = excluded.nilai, tanggal_input = NOW()`,
-                                [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, tpNum, nilai, `TP ${tpNum}`],
-                                function(err) {
+                        // ✅ FIX: Cek dulu apakah TP sudah ada
+                        const existingTp = await new Promise((resolve, reject) => {
+                            db.get(
+                                `SELECT id_nilai FROM nilai 
+                                 WHERE id_siswa = ? AND id_guru = ? AND id_mapel = ? 
+                                 AND id_kelas = ? AND id_ta_semester = ? AND jenis_nilai = 'TP' AND urutan_tp = ?`,
+                                [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, tpNum],
+                                (err, row) => {
                                     if (err) reject(err);
-                                    else resolve();
+                                    else resolve(row);
                                 }
                             );
                         });
+                        
+                        if (existingTp) {
+                            // Update existing
+                            await new Promise((resolve, reject) => {
+                                db.run(
+                                    `UPDATE nilai SET nilai = ?, tanggal_input = datetime('now'), keterangan = ?
+                                     WHERE id_nilai = ?`,
+                                    [nilai, `TP ${tpNum}`, existingTp.id_nilai],
+                                    function(err) {
+                                        if (err) reject(err);
+                                        else resolve();
+                                    }
+                                );
+                            });
+                        } else {
+                            // Insert new
+                            await new Promise((resolve, reject) => {
+                                db.run(
+                                    `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
+                                     VALUES (?, ?, ?, ?, ?, 'TP', ?, ?, datetime('now'), ?)`,
+                                    [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, tpNum, nilai, `TP ${tpNum}`],
+                                    function(err) {
+                                        if (err) reject(err);
+                                        else resolve();
+                                    }
+                                );
+                            });
+                        }
                         successCount++;
                     } catch (err) {
                         errors.push(`Gagal menyimpan TP${tpNum} untuk ID ${idSiswa}: ${err.message}`);
@@ -479,19 +507,47 @@ exports.importGradesFromExcel = async (req, res) => {
                 }
                 
                 try {
-                    await new Promise((resolve, reject) => {
-                        db.run(
-                            `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
-                             VALUES (?, ?, ?, ?, ?, 'UAS', NULL, ?, NOW(), 'UAS')
-                             ON CONFLICT(id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp)
-                             DO UPDATE SET nilai = excluded.nilai, tanggal_input = NOW()`,
-                            [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, nilai],
-                            function(err) {
+                    // ✅ FIX: Untuk UAS, cek dulu apakah sudah ada
+                    const existingUas = await new Promise((resolve, reject) => {
+                        db.get(
+                            `SELECT id_nilai FROM nilai 
+                             WHERE id_siswa = ? AND id_guru = ? AND id_mapel = ? 
+                             AND id_kelas = ? AND id_ta_semester = ? AND jenis_nilai = 'UAS'`,
+                            [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester],
+                            (err, row) => {
                                 if (err) reject(err);
-                                else resolve();
+                                else resolve(row);
                             }
                         );
                     });
+                    
+                    if (existingUas) {
+                        // Update existing
+                        await new Promise((resolve, reject) => {
+                            db.run(
+                                `UPDATE nilai SET nilai = ?, tanggal_input = datetime('now'), keterangan = 'UAS'
+                                 WHERE id_nilai = ?`,
+                                [nilai, existingUas.id_nilai],
+                                function(err) {
+                                    if (err) reject(err);
+                                    else resolve();
+                                }
+                            );
+                        });
+                    } else {
+                        // Insert new
+                        await new Promise((resolve, reject) => {
+                            db.run(
+                                `INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
+                                 VALUES (?, ?, ?, ?, ?, 'UAS', NULL, ?, datetime('now'), 'UAS')`,
+                                [student.id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, nilai],
+                                function(err) {
+                                    if (err) reject(err);
+                                    else resolve();
+                                }
+                            );
+                        });
+                    }
                     successCount++;
                 } catch (err) {
                     errors.push(`Gagal menyimpan UAS untuk ID ${idSiswa}: ${err.message}`);
