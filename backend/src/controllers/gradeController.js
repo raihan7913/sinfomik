@@ -1063,9 +1063,10 @@ exports.exportFinalGrades = async (req, res) => {
         // 6. Set column headers
         const headers = ['No', 'ID Siswa', 'Nama Siswa'];
         
-        // Add TP columns
-        tpList.forEach((tp, index) => {
-            headers.push(`TP${index + 1}`);
+        // Add TP columns - use actual urutan_tp from data
+        tpList.forEach((tp) => {
+            const tpNumber = tp.urutan_tp || (tpList.indexOf(tp) + 1);
+            headers.push(`TP${tpNumber}`);
         });
         
         // Add summary columns
@@ -1091,10 +1092,11 @@ exports.exportFinalGrades = async (req, res) => {
                 student.nama_siswa
             ];
             
-            // Add TP grades
+            // Add TP grades - use actual urutan_tp from data
             const tpColumns = [];
             tpList.forEach((tp, tpIndex) => {
-                const tpKey = `TP${tpIndex + 1}`;
+                const tpNumber = tp.urutan_tp || (tpIndex + 1);
+                const tpKey = `TP${tpNumber}`;
                 const tpValue = studentGrades[tpKey];
                 rowData.push(tpValue !== undefined ? tpValue : '');
                 
