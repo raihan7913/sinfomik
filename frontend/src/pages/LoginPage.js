@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { loginUser } from '../api/auth'; // Import fungsi login dari API
 import feather from 'feather-icons';
+import './LoginPage.css';
 
 function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -80,8 +81,8 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen overflow-y-auto overflow-x-hidden animate-fadeIn">
-      <div className="flex items-center justify-center p-4 py-8 min-h-screen">
+    <div className="login-page-wrapper bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen overflow-y-auto overflow-x-hidden animate-fadeIn">
+      <div className="flex p-4 py-8">
         <div className="container mx-auto px-4 w-full min-w-[320px]">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-8 items-center">

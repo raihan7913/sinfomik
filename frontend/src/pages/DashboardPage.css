@@ -141,6 +141,8 @@ html, body, #root {
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1rem 0;
+    /* Add padding bottom to prevent content from being hidden behind logout button */
+    padding-bottom: 5rem;
 }
 
 .sidebar-content::-webkit-scrollbar {
@@ -207,9 +209,11 @@ html, body, #root {
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
-/* Logout Button */
+/* Logout Button - Fixed at bottom */
 .logout-btn {
-    margin: 1rem;
+    position: sticky;
+    bottom: 0;
+    margin: 0 1rem 1rem;
     padding: 0.875rem;
     background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
     border: none;
@@ -222,6 +226,8 @@ html, body, #root {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    flex-shrink: 0;
+    z-index: 10;
 }
 
 .logout-btn i {

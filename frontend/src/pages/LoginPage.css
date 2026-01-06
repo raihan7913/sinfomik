@@ -1,0 +1,27 @@
+/* Custom scrollbar for login page */
+.login-page-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.5) rgba(255, 255, 255, 0.1);
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.login-page-wrapper::-webkit-scrollbar {
+  width: 12px;
+}
+
+.login-page-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.login-page-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.5);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.login-page-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.8);
+  background-clip: padding-box;
+}
