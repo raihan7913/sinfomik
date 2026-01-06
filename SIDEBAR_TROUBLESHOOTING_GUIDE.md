@@ -30,7 +30,60 @@
 
 ## 🐛 Kemungkinan Masalah Lain & Solusi
 
-### 1. **Browser Cache Issue** 🗂️
+### 1. **Service Worker Cache Issue (PWA)** 🚨 **CRITICAL!**
+
+**Gejala:**
+- Sidebar tidak muncul meskipun sudah deploy versi baru
+- Hard refresh (Ctrl+Shift+R) tidak membantu
+- Clear browser cache tidak membantu  
+- Works di Incognito mode tapi tidak di normal mode
+- Behavior berbeda antar user
+
+**Root Cause:**
+Aplikasi menggunakan **PWA Service Worker** yang meng-cache CSS/JS lama. Service worker tetap serve versi lama sampai di-unregister atau update.
+
+**Solusi:**
+
+#### A. Quick Fix - Clear Cache Tool
+Buka: **[http://localhost:3000/clear-cache.html](http://localhost:3000/clear-cache.html)**
+- Klik "Bersihkan Semua Cache"
+- Tool akan unregister service worker & clear cache otomatis
+- Halaman akan reload dengan versi baru
+
+#### B. Manual - Via Browser Console
+```javascript
+// Unregister service workers
+navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+        registration.unregister();
+        console.log('✅ Service Worker unregistered');
+    }
+});
+
+// Clear all caches
+caches.keys().then(function(names) {
+    for (let name of names) {
+        caches.delete(name);
+        console.log('✅ Cache deleted:', name);
+    }
+});
+
+// Reload
+setTimeout(() => location.reload(true), 1000);
+```
+
+#### C. Via Browser DevTools
+1. **F12** → **Application** tab
+2. **Service Workers** → Unregister all
+3. **Storage** → Clear site data
+4. **Hard refresh** (Ctrl+Shift+R)
+
+**Prevention:**
+Service worker sekarang disabled di development mode untuk avoid cache issues.
+
+---
+
+### 2. **Browser Cache Issue** 🗂️
 
 **Gejala:**
 - Sidebar tidak muncul meskipun sudah deploy versi baru
