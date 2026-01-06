@@ -123,12 +123,28 @@ const ClassPromote = () => {
       let totalInserted = 0;
       let totalFailed = 0;
       
+      // First, fetch all classes in target semester
+      const targetKelasData = await adminApi.getKelas(toTASemesterId);
+      console.log(`📚 Target semester classes:`, targetKelasData.map(k => ({ id: k.id_kelas, name: k.nama_kelas })));
+      
       // Promote each class one by one
       for (const classGroup of studentsGroupedByClass) {
         try {
           const studentIds = classGroup.students.map(s => s.id_siswa);
-          // Promote to same class in new semester
-          const response = await adminApi.promoteStudents(studentIds, classGroup.kelas.id_kelas, toTASemesterId);
+          
+          // Find equivalent class in target semester by name
+          const targetClass = targetKelasData.find(k => k.nama_kelas === classGroup.kelas.nama_kelas);
+          
+          if (!targetClass) {
+            console.error(`❌ Target class "${classGroup.kelas.nama_kelas}" not found in target semester!`);
+            totalFailed += studentIds.length;
+            continue;
+          }
+          
+          console.log(`🎯 Promoting ${studentIds.length} students from ${classGroup.kelas.nama_kelas} (ID: ${classGroup.kelas.id_kelas}) to target class ID: ${targetClass.id_kelas}`);
+          
+          // Promote to equivalent class in new semester
+          const response = await adminApi.promoteStudents(studentIds, targetClass.id_kelas, toTASemesterId);
           
           // Get actual counts from API response
           totalInserted += response.insertedCount || 0;
@@ -144,9 +160,17 @@ const ClassPromote = () => {
       console.log(`🎯 Final result: ${totalInserted} inserted, ${totalFailed} failed/duplicate`);
       
       if (totalInserted > 0) {
-        showMessage(`✅ Berhasil memindahkan ${totalInserted} siswa ke semester baru!${totalFailed > 0 ? ` (${totalFailed} siswa sudah ada sebelumnya)` : ''}`, 'success');
+        showMessage(`✅ Berhasil memindahkan ${totalInserted} siswa ke semester baru!${totalFailed > 0 ? ` (${totalFailed} siswa sudah ada sebelumnya)` : ''} 
+
+⚠️ PENTING: Untuk melihat siswa di semester tujuan, Anda harus SET SEMESTER AKTIF ke "${toSemester.semester}" di menu Manajemen Semester!`, 'success');
       } else if (totalFailed > 0) {
-        showMessage(`⚠️ Semua siswa (${totalFailed} siswa) SUDAH ADA di semester ${toSemester.semester}. Tidak ada yang dipindahkan karena data sudah ada. Ganti dropdown "Semester Sumber" ke semester ${toSemester.semester} untuk melihat data!`, 'warning');
+        showMessage(`⚠️ Semua siswa (${totalFailed} siswa) SUDAH ADA di semester ${toSemester.semester}. Tidak ada yang dipindahkan karena data sudah ada.
+
+📌 Untuk MELIHAT data siswa di semester tujuan:
+1. Buka menu "Manajemen Semester"
+2. Set semester "${toSemester.semester}" sebagai SEMESTER AKTIF
+3. Buka menu "Penugasan Siswa ke Kelas"
+4. Data siswa akan muncul di semester aktif tersebut!`, 'warning');
       } else {
         showMessage('Tidak ada siswa yang diproses.', 'error');
       }
