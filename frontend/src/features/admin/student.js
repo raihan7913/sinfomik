@@ -209,8 +209,7 @@ const EditStudentModal = ({ student, onClose, onSave, taSemesters = [], parseSta
       toast.error('Nama siswa tidak boleh kosong');
       setIsSubmitting(false);
       return;
-    }empat_lahir: editedStudent.tempat_lahir?.trim() || null,
-        t
+    }
     
     try {
       const dataToUpdate = {
@@ -390,6 +389,16 @@ const StudentManagement = () => {
   const [isImporting, setIsImporting] = useState(false);
 
   const itemsPerPage = 20;
+
+  // Filter and paginate students
+  const displayedStudents = students
+    .filter(s => {
+      const q = searchTerm.trim().toLowerCase();
+      if (!q) return true;
+      return (s.id_siswa && String(s.id_siswa).toLowerCase().includes(q)) || 
+             (s.nama_siswa && s.nama_siswa.toLowerCase().includes(q));
+    })
+    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const fetchStudents = async () => {
     setLoading(true);
