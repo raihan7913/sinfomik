@@ -98,10 +98,7 @@ const preprocessExcelFile = async (file) => {
         if (cell.t === 'n' && cell.v) {
           cell.t = 's'; // Change type to string
           cell.v = String(cell.v); // Convert value to string
-          // Pad with leading zero if needed for NISN (10 digits)
-          if (C === 0 && cell.v.length < 10 && !isNaN(cell.v)) {
-            cell.v = cell.v.padStart(10, '0');
-          }
+          // No padding - keep NISN as-is (flexible length)
         }
       }
     }
@@ -129,13 +126,10 @@ const preprocessExcelFile = async (file) => {
       const row = rows[r];
       if (!row || row.length === 0) continue;
       
-      // Process NISN: ensure it's text and preserve leading zeros
+      // Process NISN: ensure it's text and preserve leading zeros (no padding)
       if (nisnIndex !== -1 && row[nisnIndex] !== undefined && row[nisnIndex] !== null && row[nisnIndex] !== '') {
         let nisn = String(row[nisnIndex]).trim();
-        // Pad with leading zeros if NISN is less than 10 digits and numeric
-        if (!isNaN(nisn) && nisn.length < 10) {
-          nisn = nisn.padStart(10, '0');
-        }
+        // Keep NISN as-is, no padding (flexible length)
         row[nisnIndex] = nisn;
       }
       
