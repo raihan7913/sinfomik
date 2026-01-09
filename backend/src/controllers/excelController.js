@@ -741,6 +741,7 @@ exports.importStudents = async (req, res) => {
             if (!row[nisnIndex] || !row[namaIndex]) continue;
             
             const nisn = row[nisnIndex].toString().trim();
+            const nama = row[namaIndex].toString().trim();
             // Tanggal lahir sekarang adalah text bebas (bisa "Bandung, 16 Januari 2010" atau format lain)
             const tglLahir = tglLahirIndex !== -1 && row[tglLahirIndex] ? row[tglLahirIndex].toString().trim() : null;
             const jenisKelamin = jenisKelaminIndex !== -1 && row[jenisKelaminIndex] ? row[jenisKelaminIndex].toString().trim().toUpperCase() : 'L';
