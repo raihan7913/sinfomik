@@ -893,6 +893,21 @@ exports.importEnrollment = async (req, res) => {
 
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        // Force NISN cells to string to preserve leading zeros
+        const range = xlsx.utils.decode_range(sheet['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellAddress = xlsx.utils.encode_cell({ r: R, c: C });
+                const cell = sheet[cellAddress];
+                if (cell && cell.t === 'n' && typeof cell.v === 'number') {
+                    // Convert numeric NISN to string
+                    cell.t = 's';
+                    cell.v = String(cell.v);
+                }
+            }
+        }
+        
         const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
         
         // Get active TA Semester
