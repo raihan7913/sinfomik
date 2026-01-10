@@ -38,7 +38,7 @@ exports.exportGradeTemplate = async (req, res) => {
             db.all(
                 `SELECT s.id_siswa, s.nama_siswa
                  FROM siswa s
-                 INNER JOIN siswakelas sk ON s.id_siswa = sk.id_siswa
+                 INNER JOIN SiswaKelas sk ON s.id_siswa = sk.id_siswa
                  WHERE sk.id_kelas = ? AND sk.id_ta_semester = ?
                  ORDER BY s.nama_siswa`,
                 [id_kelas, id_ta_semester],
@@ -518,9 +518,9 @@ exports.importGradesFromExcel = async (req, res) => {
             // ✅ NEW: Verify student is enrolled in this class for this semester
             const enrollment = await new Promise((resolve, reject) => {
                 db.get(
-                    `SELECT ks.id_kelas_siswa 
-                     FROM kelas_siswa ks
-                     WHERE ks.id_siswa = ? AND ks.id_kelas = ? AND ks.id_ta_semester = ?`,
+                    `SELECT id_siswa 
+                     FROM SiswaKelas
+                     WHERE id_siswa = ? AND id_kelas = ? AND id_ta_semester = ?`,
                     [student.id_siswa, id_kelas, id_ta_semester],
                     (err, row) => {
                         if (err) reject(err);
@@ -1061,7 +1061,7 @@ exports.exportFinalGrades = async (req, res) => {
             db.all(
                 `SELECT s.id_siswa, s.nama_siswa
                  FROM siswa s
-                 INNER JOIN siswakelas sk ON s.id_siswa = sk.id_siswa
+                 INNER JOIN SiswaKelas sk ON s.id_siswa = sk.id_siswa
                  WHERE sk.id_kelas = ? AND sk.id_ta_semester = ?
                  ORDER BY s.nama_siswa`,
                 [id_kelas, id_ta_semester],
