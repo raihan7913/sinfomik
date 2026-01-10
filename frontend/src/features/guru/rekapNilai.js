@@ -346,6 +346,28 @@ const RekapNilai = ({ activeTASemester, userId }) => {
                   <i className="fas fa-info-circle mr-1"></i>
                   <strong>Keterangan:</strong> Nilai Akhir = 70% rata-rata TP + 30% UAS
                 </p>
+
+                {/* Color legend and KKM note */}
+                <div className="mt-3 p-3 bg-white border rounded">
+                  <p className="text-sm font-medium text-gray-800 mb-2">Catatan Warna:</p>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
+                      <span>Hijau — Nilai &ge; KKM (nilai KKM di-set oleh guru)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block" />
+                      <span>Kuning — Nilai &ge; (KKM - 15)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+                      <span>Merah — Nilai &lt; (KKM - 15)</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    KKM diambil dari pengaturan guru untuk kombinasi kelas & mata pelajaran ini. Jika belum diset oleh guru, sistem menggunakan nilai default <strong>75</strong> untuk perhitungan warna.
+                  </p>
+                </div>
               </div>
 
               {loadingRekap ? (
