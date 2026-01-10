@@ -112,7 +112,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       try {
-        const allClients = await clients.matchAll({ includeUncontrolled: true });
+        const allClients = await self.clients.matchAll({ includeUncontrolled: true });
         for (const client of allClients) {
           client.postMessage({ type: 'SW_ACTIVATED' });
         }
