@@ -515,6 +515,30 @@ exports.importGradesFromExcel = async (req, res) => {
                 continue;
             }
             
+            // ✅ NEW: Verify student is enrolled in this class for this semester
+            const enrollment = await new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT ks.id_kelas_siswa 
+                     FROM kelas_siswa ks
+                     WHERE ks.id_siswa = ? AND ks.id_kelas = ? AND ks.id_ta_semester = ?`,
+                    [student.id_siswa, id_kelas, id_ta_semester],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+            
+            if (!enrollment) {
+                errors.push({
+                    siswa: student.nama_siswa,
+                    nisn: idSiswa,
+                    error: `Siswa ${student.nama_siswa} (NISN: ${idSiswa}) tidak terdaftar di kelas ini untuk semester aktif. Pastikan siswa sudah di-enroll ke kelas.`
+                });
+                failCount++;
+                continue;
+            }
+            
             // Save TP grades
             for (let tpNum = 1; tpNum <= tpCount; tpNum++) {
                 const colIndex = tpStartCol + (tpNum - 1);
