@@ -131,7 +131,24 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
     assignment.nama_guru.toLowerCase().includes(searchTerm.toLowerCase()) ||
     assignment.nama_mapel.toLowerCase().includes(searchTerm.toLowerCase()) ||
     assignment.nama_kelas.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => {
+    // Extract class number from class name (e.g., "1 Darehdeh" -> 1, "10 ABC" -> 10)
+    const extractClassNumber = (namaKelas) => {
+      const match = namaKelas.match(/^(\d+)/);
+      return match ? parseInt(match[1]) : 999; // If no number, put at end
+    };
+    
+    const classNumA = extractClassNumber(a.nama_kelas);
+    const classNumB = extractClassNumber(b.nama_kelas);
+    
+    // Sort by class number first
+    if (classNumA !== classNumB) {
+      return classNumA - classNumB;
+    }
+    
+    // If same class number, sort by class name alphabetically
+    return a.nama_kelas.localeCompare(b.nama_kelas);
+  });
 
   const groupedAssignments = () => {
     const grouped = {};

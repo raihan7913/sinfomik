@@ -85,8 +85,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
       results.forEach(studentsInKelas => {
         if (Array.isArray(studentsInKelas)) {
           studentsInKelas.forEach(s => {
-            const idNum = Number(s?.id_siswa);
-            if (!Number.isNaN(idNum)) allEnrolledIds.add(idNum);
+            if (s?.id_siswa) allEnrolledIds.add(String(s.id_siswa));
           });
         }
       });
@@ -147,8 +146,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
   };
 
   const availableStudents = students.filter(s => {
-    const idNum = Number(s.id_siswa);
-    return !allStudentsInSemester.includes(idNum);
+    return !allStudentsInSemester.includes(String(s.id_siswa));
   });
 
   const filteredAvailableStudents = availableStudents.filter(student => {
@@ -163,7 +161,7 @@ const StudentClassEnroll = ({ activeTASemester }) => {
     if (selectedStudents.length === filteredAvailableStudents.length) {
       setSelectedStudents([]);
     } else {
-      setSelectedStudents(filteredAvailableStudents.map(s => Number(s.id_siswa)));
+      setSelectedStudents(filteredAvailableStudents.map(s => s.id_siswa));
     }
   };
 

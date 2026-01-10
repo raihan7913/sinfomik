@@ -29,23 +29,23 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
     const [loadingTAS, setLoadingTAS] = useState(true);
     const [errorTAS, setErrorTAS] = useState(null);
     
-    // ✅ FIX: Deteksi mobile yang lebih akurat - gunakan breakpoint 768px dan user-agent
+    // ✅ FIX: Deteksi mobile yang lebih akurat - PRIORITASKAN SCREEN WIDTH
     const [isMobile, setIsMobile] = useState(() => {
         if (typeof window !== 'undefined') {
-            // Hanya anggap mobile jika:
-            // 1. Lebar < 768px (tablet portrait/mobile), ATAU
-            // 2. Device adalah smartphone (bukan tablet/laptop touchscreen)
-            // ✅ iPad landscape (>768px) akan dianggap desktop karena width check
-            const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const isSmallScreen = window.innerWidth < 768;
+            const screenWidth = window.innerWidth;
             
-            // ✅ Tambahan: Jika iPad tapi width >= 768px (landscape), treat as desktop
-            const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            if (isIPad && window.innerWidth >= 768) {
-                return false; // iPad landscape = desktop mode
+            // PRIORITAS 1: Screen width < 768px = selalu mobile
+            if (screenWidth < 768) {
+                return true;
             }
             
-            return isMobileDevice || isSmallScreen;
+            // PRIORITAS 2: Screen width >= 768px = desktop/tablet
+            // Hanya cek user-agent untuk smartphone, bukan tablet atau laptop touchscreen
+            const isSmartphone = /iPhone|iPod|Android.*Mobile|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Jika width >= 768px tapi smartphone, tetap anggap mobile (rare case)
+            // Tapi biasanya smartphone max width 428px, jadi ini edge case
+            return isSmartphone && screenWidth < 768;
         }
         return false;
     });
@@ -54,38 +54,21 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
     const [isSidebarOpen, setSidebarOpen] = useState(() => {
         if (typeof window !== 'undefined') {
             try {
-                // Cek user preference dari localStorage
+                const screenWidth = window.innerWidth;
                 const savedPreference = localStorage.getItem('sidebar-open-preference');
                 
-                const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                const isSmallScreen = window.innerWidth < 768;
+                // SIMPLE: Screen width < 768px = mobile (closed), >= 768px = desktop (use preference)
+                const isMobileNow = screenWidth < 768;
                 
-                // ✅ iPad landscape check
-                const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                const isIPadLandscape = isIPad && window.innerWidth >= 768;
-                
-                let isMobileNow;
-                if (isIPadLandscape) {
-                    isMobileNow = false; // iPad landscape = desktop
-                } else {
-                    isMobileNow = isMobileDevice || isSmallScreen;
-                }
-                
-                // Di mobile: selalu closed
-                // Di desktop: gunakan preference jika ada, default open
                 if (isMobileNow) {
-                    return false;
+                    return false; // Mobile: always closed by default
                 } else {
-                    return savedPreference !== null ? savedPreference === 'true' : true;
+                    return savedPreference !== null ? savedPreference === 'true' : true; // Desktop: preference or default open
                 }
             } catch (e) {
                 console.warn('localStorage not available:', e);
-                // Fallback: mobile = closed, desktop = open
-                const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                const isSmallScreen = window.innerWidth < 768;
-                const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                const isIPadLandscape = isIPad && window.innerWidth >= 768;
-                return isIPadLandscape || !(isMobileDevice || isSmallScreen);
+                // Fallback: width check only
+                return window.innerWidth >= 768;
             }
         }
         return true;
@@ -126,14 +109,10 @@ function DashboardPage({ userRole, username, userId, onLogout, isSuperAdmin }) {
     // ✅ FIX: Handle resize dengan breakpoint yang tepat (768px)
     useEffect(() => {
         const handleResize = () => {
-            const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const isSmallScreen = window.innerWidth < 768;
+            const screenWidth = window.innerWidth;
             
-            // ✅ iPad landscape check
-            const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            const isIPadLandscape = isIPad && window.innerWidth >= 768;
-            
-            const mobile = isIPadLandscape ? false : (isMobileDevice || isSmallScreen);
+            // SIMPLE: Screen width check only, no user-agent needed
+            const mobile = screenWidth < 768;
             
             console.log('Resize detected:', {
                 width: window.innerWidth,

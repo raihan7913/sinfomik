@@ -10,6 +10,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import StatusMessage from '../../components/StatusMessage';
 import EmptyState from '../../components/EmptyState';
+import { useToast } from '../../context/ToastContext';
 
 const InputNilai = ({ activeTASemester, userId }) => {
   const [assignments, setAssignments] = useState([]);
@@ -23,13 +24,15 @@ const InputNilai = ({ activeTASemester, userId }) => {
   const [showKkmSettings, setShowKkmSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  
+  const { toast } = useToast();
   const [isImporting, setIsImporting] = useState(false);
   const [showAddTpModal, setShowAddTpModal] = useState(false);
   const [newTpName, setNewTpName] = useState('');
   const [manualTpList, setManualTpList] = useState([]);
+  const [errorDetails, setErrorDetails] = useState([]);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -111,6 +114,8 @@ const InputNilai = ({ activeTASemester, userId }) => {
 
   const loadTpFromAtp = async (mapelId, kelasId) => {
     setIsLoadingTp(true);
+    toast.info('Sedang memuat Tujuan Pembelajaran (TP)...');
+    
     try {
       const currentAssignment = assignments.find(
         assign => `${assign.id_kelas}-${assign.id_mapel}` === selectedAssignment
@@ -243,27 +248,11 @@ const InputNilai = ({ activeTASemester, userId }) => {
         const semesterText = tpData.semester_text || 'Semua';
         const manualCount = tpNumbers.length - tpData.tp_list.length;
         const manualText = manualCount > 0 ? ` (+${manualCount} TP manual)` : '';
-        setMessage(`✅ Berhasil memuat ${tpData.total_tp} TP dari ATP ${tpData.mapel} Fase ${fase} - Semester ${semesterText} untuk ${tpData.nama_kelas}${manualText}. Deskripsi tersimpan ke database.`);
-        setMessageType('success');
-        
-        setTimeout(() => {
-          setMessage('');
-          setMessageType('');
-        }, 5000);
+        toast.success(`Berhasil memuat ${tpData.total_tp} TP dari ATP ${tpData.mapel} Fase ${fase} - Semester ${semesterText} untuk ${tpData.nama_kelas}${manualText}`);
       } else if (tpNumbers.length > 0) {
-        setMessage(`✅ Berhasil memuat ${tpNumbers.length} TP dari database`);
-        setMessageType('success');
-        setTimeout(() => {
-          setMessage('');
-          setMessageType('');
-        }, 3000);
+        toast.success(`Berhasil memuat ${tpNumbers.length} TP dari database`);
       } else {
-        setMessage('ℹ️ Tidak ada TP untuk semester ini. Silakan tambah TP manual.');
-        setMessageType('info');
-        setTimeout(() => {
-          setMessage('');
-          setMessageType('');
-        }, 3000);
+        toast.info('Tidak ada TP untuk semester ini. Silakan tambah TP manual.');
       }
     } catch (err) {
       console.log('Error loading TP from ATP:', err.message);
@@ -274,9 +263,7 @@ const InputNilai = ({ activeTASemester, userId }) => {
 
   const addTpColumn = async () => {
     if (!newTpName.trim()) {
-      setMessage('❌ Nama TP harus diisi');
-      setMessageType('error');
-      setTimeout(() => { setMessage(''); setMessageType(''); }, 3000);
+      toast.error('Nama TP harus diisi');
       return;
     }
     
@@ -312,13 +299,9 @@ const InputNilai = ({ activeTASemester, userId }) => {
       
       setShowAddTpModal(false);
       setNewTpName('');
-      setMessage(`✅ TP ${nextTpNumber} "${newTpName}" berhasil ditambahkan`);
-      setMessageType('success');
-      setTimeout(() => { setMessage(''); setMessageType(''); }, 3000);
+      toast.success(`TP ${nextTpNumber} "${newTpName}" berhasil ditambahkan`);
     } catch (err) {
-      setMessage(`❌ ${err.message}`);
-      setMessageType('error');
-      setTimeout(() => { setMessage(''); setMessageType(''); }, 3000);
+      toast.error(err.message);
     }
   };
 
@@ -333,9 +316,7 @@ const InputNilai = ({ activeTASemester, userId }) => {
         await guruApi.deleteManualTp(manualTp.id_manual_tp);
         setManualTpList(prev => prev.filter(tp => tp.tp_number !== tpNumber));
       } catch (err) {
-        setMessage(`❌ ${err.message}`);
-        setMessageType('error');
-        setTimeout(() => { setMessage(''); setMessageType(''); }, 3000);
+        toast.error(err.message);
         return;
       }
     }
@@ -359,12 +340,7 @@ const InputNilai = ({ activeTASemester, userId }) => {
     delete newDescriptions[tpNumber];
     setTpDescriptions(newDescriptions);
     
-    setMessage(`✅ TP ${tpNumber} berhasil dihapus`);
-    setMessageType('success');
-    setTimeout(() => {
-      setMessage('');
-      setMessageType('');
-    }, 3000);
+    toast.success(`TP ${tpNumber} berhasil dihapus`);
   };
 
   useEffect(() => {
@@ -388,8 +364,7 @@ const InputNilai = ({ activeTASemester, userId }) => {
       
       if (response.success && response.data && Object.keys(response.data).length > 0) {
         setKkm(response.data);
-        setMessage('✅ KKM settings berhasil dimuat dari database');
-        setMessageType('success');
+        toast.success('KKM settings berhasil dimuat dari database');
       }
     } catch (err) {
       console.log('Error loading KKM:', err.message);
@@ -398,8 +373,7 @@ const InputNilai = ({ activeTASemester, userId }) => {
 
   const saveKkmToDatabase = async () => {
     if (!selectedAssignment || !activeTASemester) {
-      setMessage('❌ Pilih assignment terlebih dahulu');
-      setMessageType('error');
+      toast.error('Pilih assignment terlebih dahulu');
       return;
     }
 
@@ -414,11 +388,9 @@ const InputNilai = ({ activeTASemester, userId }) => {
         kkm
       );
       
-      setMessage(`✅ ${response.message}`);
-      setMessageType('success');
+      toast.success(response.message);
     } catch (err) {
-      setMessage(`❌ Gagal menyimpan KKM: ${err.message}`);
-      setMessageType('error');
+      toast.error(`Gagal menyimpan KKM: ${err.message}`);
     }
   };
 
@@ -539,56 +511,85 @@ const InputNilai = ({ activeTASemester, userId }) => {
       
       if (successful > 0 && failed === 0) {
         // Semua sukses
-        setMessage(`✓ Berhasil menyimpan ${successful} nilai! Memuat data terbaru...`);
-        setMessageType('success');
+        setErrorDetails([]);
+        setShowErrorDetails(false);
         
         // ✅ FIX: Re-fetch data dari server untuk update UI
         await loadExistingGrades(kelasId, mapelId);
         
-        setMessage(`✓ Berhasil menyimpan ${successful} nilai!`);
+        toast.success(`Berhasil menyimpan ${successful} nilai!`);
       } else if (successful > 0 && failed > 0) {
         // Sebagian sukses, sebagian gagal - WARNING
-        setMessage(`⚠️ ${successful} nilai berhasil, ${failed} nilai gagal. Memuat data terbaru...`);
-        setMessageType('warning');
+        toast.warning(`${successful} nilai berhasil, ${failed} nilai gagal. Lihat detail error di bawah.`);
+        
+        // Collect detailed error information
+        const errors = [];
+        let gradeIndex = 0;
+        
+        studentsInClass.forEach(student => {
+          tpColumns.forEach(tpNum => {
+            const gradeValue = gradesInput[`${student.id_siswa}_TP${tpNum}`];
+            if (gradeValue !== undefined && gradeValue !== null && gradeValue !== '') {
+              if (results[gradeIndex]?.status === 'rejected') {
+                errors.push({
+                  siswa: student.nama_siswa,
+                  nisn: student.id_siswa,
+                  jenis: `TP ${tpNum}`,
+                  nilai: gradeValue,
+                  error: results[gradeIndex].reason?.message || results[gradeIndex].reason || 'Unknown error'
+                });
+              }
+              gradeIndex++;
+            }
+          });
+          
+          const uasValue = gradesInput[`${student.id_siswa}_UAS`];
+          if (uasValue !== undefined && uasValue !== null && uasValue !== '') {
+            if (results[gradeIndex]?.status === 'rejected') {
+              errors.push({
+                siswa: student.nama_siswa,
+                nisn: student.id_siswa,
+                jenis: 'UAS',
+                nilai: uasValue,
+                error: results[gradeIndex].reason?.message || results[gradeIndex].reason || 'Unknown error'
+              });
+            }
+            gradeIndex++;
+          }
+        });
+        
+        setErrorDetails(errors);
+        setShowErrorDetails(true);
         
         // Re-fetch untuk update yang berhasil
         await loadExistingGrades(kelasId, mapelId);
-        
-        // Log detail error untuk debugging
-        const failedDetails = results
-          .filter(r => r.status === 'rejected')
-          .map(r => r.reason?.message || r.reason)
-          .slice(0, 3); // Tampilkan max 3 error pertama
-        console.warn('Failed saves:', failedDetails);
-        
-        setMessage(`⚠️ ${successful} nilai berhasil, ${failed} nilai gagal. Periksa dan ulangi!`);
       } else if (failed > 0) {
         // Semua gagal
-        setMessage(`❌ Gagal menyimpan ${failed} nilai. Server tidak merespons atau error.`);
-        setMessageType('error');
+        toast.error(`Gagal menyimpan ${failed} nilai. Server tidak merespons atau error.`);
+        setErrorDetails([{ error: 'Semua request gagal. Periksa koneksi atau hubungi admin.' }]);
+        setShowErrorDetails(true);
       } else {
         // Tidak ada input
-        setMessage('Tidak ada nilai yang diinput atau diubah.');
-        setMessageType('info');
+        toast.info('Tidak ada nilai yang diinput atau diubah.');
+        setErrorDetails([]);
+        setShowErrorDetails(false);
       }
     } catch (err) {
-      setMessage(`Terjadi kesalahan umum saat menyimpan nilai: ${err.message}`);
-      setMessageType('error');
+      toast.error(`Terjadi kesalahan umum: ${err.message}`);
+      setErrorDetails([{ error: err.message }]);
+      setShowErrorDetails(true);
     }
   };
 
   const handleExportTemplate = async () => {
     if (!selectedAssignment || !activeTASemester) {
-      setMessage('Pilih assignment dan pastikan TA/Semester aktif');
-      setMessageType('error');
+      toast.error('Pilih assignment dan pastikan TA/Semester aktif');
       return;
     }
 
     const [kelasId, mapelId] = selectedAssignment.split('-').map(Number);
     
     setIsExporting(true);
-    setMessage('Mengunduh template Excel...');
-    setMessageType('info');
 
     try {
       await guruApi.exportGradeTemplate(
@@ -598,11 +599,9 @@ const InputNilai = ({ activeTASemester, userId }) => {
         activeTASemester.id_ta_semester
       );
       
-      setMessage('✅ Template Excel berhasil diunduh!');
-      setMessageType('success');
+      toast.success('Template Excel berhasil diunduh!');
     } catch (err) {
-      setMessage(`❌ Gagal mengunduh template: ${err.message}`);
-      setMessageType('error');
+      toast.error(`Gagal mengunduh template: ${err.message}`);
     } finally {
       setIsExporting(false);
     }
@@ -613,16 +612,13 @@ const InputNilai = ({ activeTASemester, userId }) => {
     if (!file) return;
 
     if (!selectedAssignment || !activeTASemester) {
-      setMessage('Pilih assignment dan pastikan TA/Semester aktif');
-      setMessageType('error');
+      toast.error('Pilih assignment dan pastikan TA/Semester aktif');
       return;
     }
 
     const [kelasId, mapelId] = selectedAssignment.split('-').map(Number);
     
     setIsImporting(true);
-    setMessage('Mengupload dan memproses file Excel...');
-    setMessageType('info');
 
     try {
       const result = await guruApi.importGradesFromExcel(
@@ -634,11 +630,20 @@ const InputNilai = ({ activeTASemester, userId }) => {
       );
 
       if (result.errors && result.errors.length > 0) {
-        setMessage(`⚠️ Import selesai dengan error: ${result.message}\n${result.errors.slice(0, 5).join(', ')}`);
-        setMessageType('warning');
+        toast.warning(`Import selesai: ${result.message}. Terdapat ${result.errors.length} error.`);
+        
+        // Format errors for display
+        const formattedErrors = result.errors.map(err => {
+          if (typeof err === 'string') {
+            return { error: err };
+          }
+          return err;
+        });
+        setErrorDetails(formattedErrors);
+        setShowErrorDetails(true);
       } else {
-        setMessage(`✅ ${result.message} - Memuat data terbaru...`);
-        setMessageType('success');
+        setErrorDetails([]);
+        setShowErrorDetails(false);
       }
 
       // ✅ FIX: Tunggu sebentar untuk backend selesai commit ke database
@@ -647,15 +652,14 @@ const InputNilai = ({ activeTASemester, userId }) => {
       // Re-fetch data dari server
       await loadExistingGrades(kelasId, mapelId);
       
-      // Update message setelah reload
+      // Final toast setelah reload
       if (result.errors && result.errors.length > 0) {
-        setMessage(`⚠️ Import selesai: ${result.message}`);
+        toast.warning(`Import selesai dengan ${result.errors.length} error. Lihat detail di bawah.`);
       } else {
-        setMessage(`✅ ${result.message} - Data berhasil dimuat!`);
+        toast.success(`${result.message} - Data berhasil dimuat!`);
       }
     } catch (err) {
-      setMessage(`❌ Gagal import nilai: ${err.message}`);
-      setMessageType('error');
+      toast.error(`Gagal import nilai: ${err.message}`);
     } finally {
       setIsImporting(false);
       event.target.value = '';
@@ -664,24 +668,19 @@ const InputNilai = ({ activeTASemester, userId }) => {
 
   const handleExportFinalGrades = async () => {
     if (!selectedAssignment || !activeTASemester) {
-      setMessage('Pilih assignment terlebih dahulu');
-      setMessageType('error');
+      toast.error('Pilih assignment terlebih dahulu');
       return;
     }
 
     const [kelasId, mapelId] = selectedAssignment.split('-').map(Number);
     
     setIsExporting(true);
-    setMessage('Sedang membuat file Excel nilai final...');
-    setMessageType('info');
 
     try {
       await guruApi.exportFinalGrades(userId, mapelId, kelasId, activeTASemester.id_ta_semester);
-      setMessage('✅ Nilai final berhasil diexport! File akan segera terunduh.');
-      setMessageType('success');
+      toast.success('Nilai final berhasil diexport! File akan segera terunduh.');
     } catch (err) {
-      setMessage(`❌ Gagal export nilai final: ${err.message}`);
-      setMessageType('error');
+      toast.error(`Gagal export nilai final: ${err.message}`);
     } finally {
       setIsExporting(false);
     }
@@ -703,7 +702,62 @@ const InputNilai = ({ activeTASemester, userId }) => {
         badge={currentAssignment ? `${currentAssignment.nama_kelas} - ${currentAssignment.nama_mapel}` : null}
       />
 
-      {message && <StatusMessage type={messageType} message={message} />}
+      {errorDetails.length > 0 && (
+        <div className="mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <button
+                onClick={() => setShowErrorDetails(!showErrorDetails)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <h4 className="font-semibold text-red-800 flex items-center">
+                  <i className="fas fa-exclamation-triangle mr-2"></i>
+                  Detail Error ({errorDetails.length})
+                </h4>
+                <i className={`fas fa-chevron-${showErrorDetails ? 'up' : 'down'} text-red-600`}></i>
+              </button>
+              
+              {showErrorDetails && (
+                <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
+                  {errorDetails.map((err, idx) => (
+                    <div key={idx} className="bg-white border border-red-300 rounded p-3 text-sm">
+                      {err.siswa && (
+                        <div className="font-medium text-gray-900 mb-1">
+                          <i className="fas fa-user mr-1 text-red-600"></i>
+                          {err.siswa} (NISN: {err.nisn})
+                        </div>
+                      )}
+                      {err.jenis && (
+                        <div className="text-gray-700 mb-1">
+                          <i className="fas fa-book mr-1 text-blue-600"></i>
+                          Jenis Nilai: <strong>{err.jenis}</strong> - Nilai: <strong>{err.nilai}</strong>
+                        </div>
+                      )}
+                      <div className="text-red-700">
+                        <i className="fas fa-times-circle mr-1"></i>
+                        {err.error}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="mt-3 pt-3 border-t border-red-200">
+                    <button
+                      onClick={() => {
+                        const errorText = errorDetails.map((err, idx) => 
+                          `${idx + 1}. ${err.siswa ? `${err.siswa} (${err.nisn})` : ''} ${err.jenis || ''}: ${err.error}`
+                        ).join('\n');
+                        navigator.clipboard.writeText(errorText);
+                        toast.success('Error details copied to clipboard');
+                      }}
+                      className="text-sm text-red-700 hover:text-red-900 underline"
+                    >
+                      <i className="fas fa-copy mr-1"></i>
+                      Copy Error Details
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+        </div>
+      )}
 
       {!activeTASemester && (
         <StatusMessage

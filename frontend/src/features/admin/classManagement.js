@@ -12,11 +12,21 @@ import StatusMessage from '../../components/StatusMessage';
 import EmptyState from '../../components/EmptyState';
 
 // Edit Kelas Modal
-const EditKelasModal = ({ kelas, onClose, onSave, teachers }) => {
+const EditKelasModal = ({ kelas, onClose, onSave, teachers, allKelas }) => {
   const [editedKelas, setEditedKelas] = useState({ ...kelas });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filter available teachers: exclude teachers already assigned to OTHER classes
+  const availableTeachers = teachers.filter(teacher => {
+    // Check if this teacher is already a wali kelas in another class
+    const isAssignedElsewhere = allKelas.some(k => 
+      k.id_kelas !== kelas.id_kelas && // Not the current class being edited
+      k.id_wali_kelas === teacher.id_guru // Teacher is assigned to that class
+    );
+    return !isAssignedElsewhere;
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,12 +118,18 @@ const EditKelasModal = ({ kelas, onClose, onSave, teachers }) => {
               onChange={handleChange}
             >
               <option value="">Pilih Wali Kelas</option>
-              {teachers.map(teacher => (
+              {availableTeachers.map(teacher => (
                 <option key={teacher.id_guru} value={teacher.id_guru}>
                   {teacher.nama_guru}
                 </option>
               ))}
             </select>
+            {availableTeachers.length === 0 && (
+              <small className="text-yellow-600 mt-1 block">
+                <i className="fas fa-exclamation-triangle mr-1"></i>
+                Semua guru sudah ditugaskan sebagai wali kelas
+              </small>
+            )}
           </div>
 
           <div className="modal-actions">
@@ -182,6 +198,11 @@ const KelasManagement = ({ activeTASemester }) => {
       setMessageType('');
     }, 5000);
   };
+
+  // Filter available teachers for Add Kelas form (exclude teachers already assigned)
+  const availableTeachersForAdd = teachers.filter(teacher => {
+    return !kelas.some(k => k.id_wali_kelas === teacher.id_guru);
+  });
 
   const handleAddKelas = async (e) => {
     e.preventDefault();
@@ -319,6 +340,18 @@ const KelasManagement = ({ activeTASemester }) => {
       </div>
 
       <FormSection title="Tambah Kelas Baru" icon="plus-circle" variant="success">
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <i className="fas fa-info-circle text-blue-600 text-xl mt-0.5"></i>
+            <div>
+              <h4 className="font-semibold text-blue-900 mb-1">Catatan Penting</h4>
+              <p className="text-sm text-blue-800">
+                Pastikan Anda telah menginput <strong>Mata Pelajaran</strong> terlebih dahulu sebelum menentukan wali kelas. 
+                Wali kelas dapat mengajar beberapa mata pelajaran di kelasnya.
+              </p>
+            </div>
+          </div>
+        </div>
         <form onSubmit={handleAddKelas} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="form-group">
             <label>Nama Kelas</label>
@@ -338,12 +371,18 @@ const KelasManagement = ({ activeTASemester }) => {
               onChange={(e) => setSelectedWaliKelas(e.target.value)}
             >
               <option value="">Pilih Wali Kelas</option>
-              {teachers.map(teacher => (
+              {availableTeachersForAdd.map(teacher => (
                 <option key={teacher.id_guru} value={teacher.id_guru}>
                   {teacher.nama_guru}
                 </option>
               ))}
             </select>
+            {availableTeachersForAdd.length === 0 && (
+              <small className="text-yellow-600 mt-1 block">
+                <i className="fas fa-exclamation-triangle mr-1"></i>
+                Semua guru sudah ditugaskan sebagai wali kelas
+              </small>
+            )}
           </div>
 
           <div className="md:col-span-2">
@@ -478,6 +517,7 @@ const KelasManagement = ({ activeTASemester }) => {
           onClose={() => setShowEditModal(false)}
           onSave={fetchKelasAndTeachers}
           teachers={teachers}
+          allKelas={kelas}
         />
       )}
 

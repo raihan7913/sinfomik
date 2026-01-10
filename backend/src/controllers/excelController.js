@@ -896,17 +896,22 @@ exports.importEnrollment = async (req, res) => {
         
         // Force NISN cells to string to preserve leading zeros
         const range = xlsx.utils.decode_range(sheet['!ref']);
+        let numericCellsConverted = 0;
         for (let R = range.s.r; R <= range.e.r; ++R) {
             for (let C = range.s.c; C <= range.e.c; ++C) {
                 const cellAddress = xlsx.utils.encode_cell({ r: R, c: C });
                 const cell = sheet[cellAddress];
                 if (cell && cell.t === 'n' && typeof cell.v === 'number') {
                     // Convert numeric NISN to string
+                    const originalValue = cell.v;
                     cell.t = 's';
                     cell.v = String(cell.v);
+                    numericCellsConverted++;
+                    console.log(`[IMPORT-ENROLL] Converted cell ${cellAddress}: ${originalValue} (number) -> "${cell.v}" (string)`);
                 }
             }
         }
+        console.log(`[IMPORT-ENROLL] Converted ${numericCellsConverted} numeric cells to string`);
         
         const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
         

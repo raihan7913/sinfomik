@@ -7,6 +7,9 @@
     import TokenExpiryWarning from './components/TokenExpiryWarning';
     import { ToastProvider } from './context/ToastContext';
 
+    // ✅ VERSION MANAGEMENT - Update ini setiap deploy baru untuk auto clear cache
+    const APP_VERSION = '2.0.1'; // Format: major.minor.patch
+
     function App() {
   // State untuk melacak status login pengguna
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -15,6 +18,53 @@
   const [userId, setUserId] = useState(null); // ID pengguna yang login
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isValidatingSession, setIsValidatingSession] = useState(true); // Track session validation
+
+      // ✅ AUTO CACHE CLEARING - Check version and clear cache if different
+      useEffect(() => {
+        const checkAndClearCache = async () => {
+          try {
+            const storedVersion = localStorage.getItem('app_version');
+            
+            if (storedVersion !== APP_VERSION) {
+              console.log(`🧹 Version mismatch detected: ${storedVersion} → ${APP_VERSION}`);
+              console.log('🗑️ Clearing old cache...');
+              
+              // Clear Service Worker caches
+              if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                  cacheNames.map(cacheName => {
+                    console.log(`🗑️ Deleting cache: ${cacheName}`);
+                    return caches.delete(cacheName);
+                  })
+                );
+              }
+              
+              // Clear localStorage kecuali data penting (auth, preferences)
+              const authKeys = ['isLoggedIn', 'userRole', 'username', 'userId', 'isSuperAdmin'];
+              const allKeys = Object.keys(localStorage);
+              allKeys.forEach(key => {
+                if (!authKeys.includes(key) && key !== 'app_version') {
+                  localStorage.removeItem(key);
+                }
+              });
+              
+              // Update version
+              localStorage.setItem('app_version', APP_VERSION);
+              console.log(`✅ Cache cleared! Running version ${APP_VERSION}`);
+              
+              // Optional: Reload page untuk apply changes
+              // window.location.reload();
+            } else {
+              console.log(`✅ App version up-to-date: ${APP_VERSION}`);
+            }
+          } catch (error) {
+            console.error('❌ Error clearing cache:', error);
+          }
+        };
+        
+        checkAndClearCache();
+      }, []); // Run once on mount
 
       // Efek untuk memeriksa status login dari localStorage (jika ada)
       useEffect(() => {
