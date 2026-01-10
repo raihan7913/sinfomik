@@ -133,27 +133,11 @@ const preprocessExcelFile = async (file) => {
         row[nisnIndex] = nisn;
       }
       
-      // Process Tanggal Lahir
-      if (tglIndex === -1) continue;
-      const cell = row[tglIndex];
-      if (cell === undefined || cell === null || cell === '') continue;
-
-      let dateStr = '';
-      if (typeof cell === 'number') {
-        const date = new Date(Math.round((cell - 25569) * 86400 * 1000));
-        if (!isNaN(date)) dateStr = date.toISOString().slice(0, 10);
-      } else if (cell instanceof Date) {
-        dateStr = cell.toISOString().slice(0, 10);
-      } else if (typeof cell === 'string') {
-        const iso = parseDateFlexible(cell);
-        if (iso) dateStr = iso;
-        else {
-          const parsed = Date.parse(cell);
-          if (!isNaN(parsed)) dateStr = new Date(parsed).toISOString().slice(0, 10);
-        }
+      // Process Tanggal Lahir: keep as-is (TEXT field, no conversion)
+      if (tglIndex !== -1 && row[tglIndex] !== undefined && row[tglIndex] !== null && row[tglIndex] !== '') {
+        // Just convert to string and trim, preserve original format
+        row[tglIndex] = String(row[tglIndex]).trim();
       }
-
-      if (dateStr) row[tglIndex] = dateStr;
     }
 
     const newSheet = XLSX.utils.aoa_to_sheet(rows);
