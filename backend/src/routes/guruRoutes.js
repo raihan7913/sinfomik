@@ -20,6 +20,8 @@ router.get('/assignments/:id_guru/:id_ta_semester', guruController.getGuruAssign
 router.get('/students-in-class/:id_kelas/:id_ta_semester', guruController.getStudentsInClass);
 router.post('/grades-new', guruController.addOrUpdateNewGrade); // New endpoint for TP/UAS structure
 router.get('/grades/rekap/:id_guru/:id_mapel/:id_kelas/:id_ta_semester', guruController.getRekapNilai);
+// List grades whose students are NOT enrolled in the class (orphaned)
+router.get('/grades/orphan/:id_mapel/:id_kelas/:id_ta_semester', guruController.getOrphanGrades);
 router.get('/grades/assignment/:id_guru/:id_mapel/:id_kelas/:id_ta_semester', guruController.getGradesByAssignment); // New endpoint
 
 // --- Capaian Pembelajaran untuk Guru ---

@@ -20,6 +20,7 @@ const RekapNilai = ({ activeTASemester, userId }) => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
+  const [kkmSettings, setKkmSettings] = useState({}); // KKM values loaded from DB for this assignment
 
   const fetchData = async () => {
     setLoading(true);
@@ -55,6 +56,19 @@ const RekapNilai = ({ activeTASemester, userId }) => {
           // Load TP dari ATP dulu
           await loadTpFromAtp(mapelId, kelasId);
           
+          // Load KKM settings dari database dan store ke state
+          try {
+            const kkmResp = await guruApi.getKkmSettings(userId, mapelId, kelasId, activeTASemester.id_ta_semester);
+            if (kkmResp && kkmResp.success && kkmResp.data) {
+              setKkmSettings(kkmResp.data);
+            } else {
+              setKkmSettings({});
+            }
+          } catch (err) {
+            console.warn('Error fetching KKM settings:', err?.message || err);
+            setKkmSettings({});
+          }
+          
           // Kemudian load nilai
           const data = await guruApi.getRekapNilai(userId, mapelId, kelasId, activeTASemester.id_ta_semester);
           setRekapNilai(data || []);
@@ -68,6 +82,7 @@ const RekapNilai = ({ activeTASemester, userId }) => {
       } else {
         setRekapNilai([]);
         setAllTpColumns([]);
+        setKkmSettings({});
         setLoadingRekap(false);
       }
     };
@@ -209,18 +224,28 @@ const RekapNilai = ({ activeTASemester, userId }) => {
     },
     ...uniqueGradeTypes.map(tipe => ({
       key: tipe,
-      label: tipe,
+      // Show KKM value in header if available
+      label: tipe + (tipe.startsWith('TP') ? ` (KKM ${ (Number(kkmSettings[tipe] || kkmSettings[`TP${tipe.replace('TP','')}`]) || (tipe.startsWith('TP') ? 75 : '')) })` : (tipe === 'UAS' ? ` (KKM ${ (Number(kkmSettings.UAS) || 75) })` : '')),
       className: 'text-center',
       render: (nilai, row) => {
-        // Table passes (value, row) as parameters
+        // Determine KKM threshold for this column
+        let kkmVal = 75;
+        if (tipe.startsWith('TP')) {
+          const tpNum = parseInt(tipe.substring(2));
+          const v = kkmSettings && (kkmSettings[`TP${tpNum}`] !== undefined) ? Number(kkmSettings[`TP${tpNum}`]) : NaN;
+          kkmVal = !isNaN(v) ? v : 75;
+        } else if (tipe === 'UAS') {
+          const v = kkmSettings && (kkmSettings.UAS !== undefined) ? Number(kkmSettings.UAS) : NaN;
+          kkmVal = !isNaN(v) ? v : 75;
+        }
+        const yellowThreshold = Math.max(0, kkmVal - 15);
+
         return (
           <span className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded ${
             typeof nilai === 'number' 
-              ? nilai >= 75 
-                ? 'bg-green-100 text-green-800 font-semibold'
-                : nilai >= 60
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-red-100 text-red-800 font-semibold'
+              ? (nilai >= kkmVal
+                  ? 'bg-green-100 text-green-800 font-semibold'
+                  : (nilai >= yellowThreshold ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800 font-semibold'))
               : 'text-gray-400'
           }`}>
             {typeof nilai === 'number' ? nilai : '-'}
@@ -250,14 +275,16 @@ const RekapNilai = ({ activeTASemester, userId }) => {
           finalGrade = (tpAverage * 0.7 + uasValue * 0.3).toFixed(2);
         }
         
+        // Determine final KKM
+        const finalKkm = (kkmSettings && kkmSettings.FINAL !== undefined && !isNaN(Number(kkmSettings.FINAL))) ? Number(kkmSettings.FINAL) : 75;
+        const finalYellow = Math.max(0, finalKkm - 15);
+        
         return (
           <span className={`inline-flex items-center justify-center w-20 px-3 py-1 rounded-full font-bold ${
             finalGrade !== '-'
-              ? parseFloat(finalGrade) >= 75 
-                ? 'bg-green-500 text-white'
-                : parseFloat(finalGrade) >= 60
-                ? 'bg-yellow-500 text-white'
-                : 'bg-red-500 text-white'
+              ? (parseFloat(finalGrade) >= finalKkm 
+                  ? 'bg-green-500 text-white'
+                  : (parseFloat(finalGrade) >= finalYellow ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'))
               : 'text-gray-400'
           }`}>
             {finalGrade}

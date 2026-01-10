@@ -90,54 +90,60 @@ exports.addOrUpdateNewGrade = (req, res) => {
         return res.status(400).json({ message: 'Urutan TP diperlukan untuk jenis nilai TP' });
     }
 
-    // Check if grade already exists
-    const checkQuery = jenis_nilai === 'TP' 
-        ? `SELECT id_nilai FROM nilai 
-           WHERE id_siswa = ? AND id_guru = ? AND id_mapel = ? AND id_kelas = ?
-           AND id_ta_semester = ? AND jenis_nilai = ? AND urutan_tp = ?`
-        : `SELECT id_nilai FROM nilai 
-           WHERE id_siswa = ? AND id_guru = ? AND id_mapel = ? AND id_kelas = ?
-           AND id_ta_semester = ? AND jenis_nilai = ?`;
-
-    const checkParams = jenis_nilai === 'TP' 
-        ? [id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp]
-        : [id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai];
-
-    db.get(checkQuery, checkParams, (err, row) => {
+    // Verify student is enrolled in this class/semester
+    db.get(`SELECT id_siswa FROM SiswaKelas WHERE id_siswa = ? AND id_kelas = ? AND id_ta_semester = ?`,
+            [id_siswa, id_kelas, id_ta_semester], (err, enrollRow) => {
         if (err) return res.status(500).json({ message: err.message });
+        if (!enrollRow) return res.status(400).json({ message: `Siswa ${id_siswa} tidak terdaftar di kelas ini untuk semester aktif.` });
 
-        if (row) {
-            // Update if already exists
-            console.log(`🔄 Updating nilai - id_nilai: ${row.id_nilai}, jenis: ${jenis_nilai}, nilai: ${nilai}`);
-            
-            db.run(`
-                UPDATE nilai SET nilai = ?, keterangan = ?, tanggal_input = ?
-                WHERE id_nilai = ?
-            `, [nilai, keterangan, tanggal_input, row.id_nilai], function(err) {
-                if (err) {
-                    console.error('❌ Update failed:', err.message);
-                    return res.status(400).json({ message: err.message });
-                }
+        // Check if grade already exists
+        const checkQuery = jenis_nilai === 'TP' 
+            ? `SELECT id_nilai FROM nilai 
+               WHERE id_siswa = ? AND id_guru = ? AND id_mapel = ? AND id_kelas = ?
+               AND id_ta_semester = ? AND jenis_nilai = ? AND urutan_tp = ?`
+            : `SELECT id_nilai FROM nilai 
+               WHERE id_siswa = ? AND id_guru = ? AND id_mapel = ? AND id_kelas = ?
+               AND id_ta_semester = ? AND jenis_nilai = ?`;
+
+        const checkParams = jenis_nilai === 'TP' 
+            ? [id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp]
+            : [id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai];
+
+        db.get(checkQuery, checkParams, (err, row) => {
+            if (err) return res.status(500).json({ message: err.message });
+
+            if (row) {
+                // Update if already exists
+                console.log(`🔄 Updating nilai - id_nilai: ${row.id_nilai}, jenis: ${jenis_nilai}, nilai: ${nilai}`);
                 
-                console.log(`✅ Update success - changes: ${this.changes}`);
-                res.status(200).json({ 
-                    message: 'Nilai berhasil diperbarui.', 
-                    id: row.id_nilai, 
-                    changes: this.changes,
-                    updated: true
+                db.run(`
+                    UPDATE nilai SET nilai = ?, keterangan = ?, tanggal_input = ?
+                    WHERE id_nilai = ?
+                `, [nilai, keterangan, tanggal_input, row.id_nilai], function(err) {
+                    if (err) {
+                        console.error('❌ Update failed:', err.message);
+                        return res.status(400).json({ message: err.message });
+                    }
+                    
+                    console.log(`✅ Update success - changes: ${this.changes}`);
+                    res.status(200).json({ 
+                        message: 'Nilai berhasil diperbarui.', 
+                        id: row.id_nilai, 
+                        changes: this.changes,
+                        updated: true
+                    });
                 });
-            });
-        } else {
-            // Insert if not exists
-            console.log(`➕ Inserting new nilai - jenis: ${jenis_nilai}, nilai: ${nilai}`);
-            
-            db.run(`
-                INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan], function(err) {
-                if (err) {
-                    console.error('❌ Insert failed:', err.message);
-                    return res.status(400).json({ message: err.message });
+            } else {
+                // Insert if not exists
+                console.log(`➕ Inserting new nilai - jenis: ${jenis_nilai}, nilai: ${nilai}`);
+                
+                db.run(`
+                    INSERT INTO nilai (id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [id_siswa, id_guru, id_mapel, id_kelas, id_ta_semester, jenis_nilai, urutan_tp, nilai, tanggal_input, keterangan], function(err) {
+                    if (err) {
+                        console.error('❌ Insert failed:', err.message);
+                        return res.status(400).json({ message: err.message });
                 }
                 
                 console.log(`✅ Insert success - id: ${this.lastID}`);
@@ -192,9 +198,37 @@ exports.getRekapNilai = (req, res) => {
             n.keterangan
         FROM nilai n
         JOIN siswa s ON n.id_siswa = s.id_siswa
+        -- Ensure student is currently enrolled in this class/semester
+        JOIN SiswaKelas sk ON sk.id_siswa = n.id_siswa AND sk.id_kelas = n.id_kelas AND sk.id_ta_semester = n.id_ta_semester
         WHERE n.id_guru = ? AND n.id_mapel = ? AND n.id_kelas = ? AND n.id_ta_semester = ?
         ORDER BY s.nama_siswa, n.jenis_nilai, n.urutan_tp
     `, [id_guru, id_mapel, id_kelas, id_ta_semester], (err, rows) => {
+        if (err) return res.status(500).json({ message: err.message });
+        res.json(rows);
+    });
+};
+
+// --- Endpoint: List orphaned grades (students not enrolled in the class) ---
+exports.getOrphanGrades = (req, res) => {
+    const { id_mapel, id_kelas, id_ta_semester } = req.params;
+    const db = getDb();
+
+    db.all(`
+        SELECT
+            n.id_nilai,
+            n.id_siswa,
+            s.nama_siswa,
+            n.jenis_nilai,
+            n.urutan_tp,
+            n.nilai,
+            n.tanggal_input,
+            n.keterangan
+        FROM nilai n
+        JOIN siswa s ON n.id_siswa = s.id_siswa
+        LEFT JOIN SiswaKelas sk ON sk.id_siswa = n.id_siswa AND sk.id_kelas = n.id_kelas AND sk.id_ta_semester = n.id_ta_semester
+        WHERE n.id_mapel = ? AND n.id_kelas = ? AND n.id_ta_semester = ? AND sk.id_siswa IS NULL
+        ORDER BY s.nama_siswa, n.jenis_nilai, n.urutan_tp
+    `, [id_mapel, id_kelas, id_ta_semester], (err, rows) => {
         if (err) return res.status(500).json({ message: err.message });
         res.json(rows);
     });

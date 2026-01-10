@@ -1053,19 +1053,28 @@ const InputNilai = ({ activeTASemester, userId }) => {
                       </table>
                     </div>
 
-                    <div className="flex justify-between items-center pt-4">
-                      <p className="text-sm text-gray-600">
-                        <i className="fas fa-calculator mr-1"></i>
-                        <strong>Keterangan:</strong> Nilai Akhir = 70% rata-rata TP + 30% UAS
-                      </p>
-                      <Button
-                        type="submit"
-                        variant="success"
-                        icon="save"
-                        size="lg"
-                      >
-                        Simpan Semua Nilai
-                      </Button>
+                    <div className="space-y-3 pt-4">
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          <i className="fas fa-info-circle mr-2"></i>
+                          <strong>Catatan Penting:</strong> Jika ada TP yang tidak digunakan atau tidak diajarkan, <strong>kosongkan saja</strong> kolom nilainya. Jangan isi dengan angka 0 karena akan dihitung dalam rata-rata. Kolom kosong tidak akan mempengaruhi perhitungan nilai akhir.
+                        </p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">
+                          <i className="fas fa-calculator mr-1"></i>
+                          <strong>Keterangan:</strong> Nilai Akhir = 70% rata-rata TP + 30% UAS
+                        </p>
+                        <Button
+                          type="submit"
+                          variant="success"
+                          icon="save"
+                          size="lg"
+                        >
+                          Simpan Semua Nilai
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </FormSection>
