@@ -590,7 +590,8 @@ exports.getAllKelas = (req, res) => {
     const { id_ta_semester } = req.query; // Ambil dari query parameter
     const db = getDb();
     let query = `
-        SELECT k.id_kelas, k.nama_kelas, g.nama_guru AS wali_kelas, tas.tahun_ajaran, tas.semester
+        -- Include id_wali_kelas so frontend can detect which teachers are already assigned
+        SELECT k.id_kelas, k.nama_kelas, k.id_wali_kelas, g.nama_guru AS wali_kelas, tas.tahun_ajaran, tas.semester
         FROM kelas k
         LEFT JOIN guru g ON k.id_wali_kelas = g.id_guru
         JOIN tahunajaransemester tas ON k.id_ta_semester = tas.id_ta_semester

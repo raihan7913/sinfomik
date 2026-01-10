@@ -23,13 +23,13 @@ const EditKelasModal = ({ kelas, onClose, onSave, teachers, allKelas }) => {
     // Check if this teacher is already a wali kelas in another class
     const isAssignedElsewhere = allKelas.some(k => 
       k.id_kelas !== kelas.id_kelas && // Not the current class being edited
-      k.id_wali_kelas === teacher.id_guru // Teacher is assigned to that class
+      Number(k.id_wali_kelas) === teacher.id_guru // Teacher is assigned to that class
     );
     
     // Include the teacher if:
     // 1. Not assigned elsewhere, OR
     // 2. Currently assigned to THIS class (so they remain selectable)
-    return !isAssignedElsewhere || teacher.id_guru === kelas.id_wali_kelas;
+    return !isAssignedElsewhere || Number(kelas.id_wali_kelas) === teacher.id_guru;
   });
 
   const handleChange = (e) => {
@@ -205,7 +205,7 @@ const KelasManagement = ({ activeTASemester }) => {
 
   // Filter available teachers for Add Kelas form (exclude teachers already assigned)
   const availableTeachersForAdd = teachers.filter(teacher => {
-    return !kelas.some(k => k.id_wali_kelas === teacher.id_guru);
+    return !kelas.some(k => Number(k.id_wali_kelas) === teacher.id_guru);
   });
 
   const handleAddKelas = async (e) => {
