@@ -688,7 +688,26 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
               </h3>
               
               <div className="space-y-4">
-                {Object.values(getClassSubjectMapping(selectedTeacherDetail.assignments)).map((classData) => {
+                {Object.values(getClassSubjectMapping(selectedTeacherDetail.assignments))
+                  .sort((a, b) => {
+                    // Extract class number from class name (e.g., "1 Darehdeh" -> 1, "10 ABC" -> 10)
+                    const extractClassNumber = (kelas) => {
+                      const match = kelas.match(/^(\d+)/);
+                      return match ? parseInt(match[1]) : 999; // If no number, put at end
+                    };
+                    
+                    const classNumA = extractClassNumber(a.kelas);
+                    const classNumB = extractClassNumber(b.kelas);
+                    
+                    // Sort by class number first
+                    if (classNumA !== classNumB) {
+                      return classNumA - classNumB;
+                    }
+                    
+                    // If same class number, sort by class name alphabetically
+                    return a.kelas.localeCompare(b.kelas);
+                  })
+                  .map((classData) => {
                   const isWaliKelasForClass = classData.subjects.some(s => s.assignment.is_wali_kelas === 1);
                   
                   return (
