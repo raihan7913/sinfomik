@@ -363,13 +363,6 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
     return '';
   };
 
-  if (loading) return <LoadingSpinner message="Memuat dashboard wali kelas..." />;
-  if (error) return <StatusMessage type="error" message={error} />;
-  if (classList.length === 0) return <StatusMessage type="info" message="Anda bukan wali kelas untuk tahun ajaran dan semester aktif ini." />;
-  if (!classInfo) return <StatusMessage type="info" message="Silakan pilih kelas atau tunggu data dimuat." />;
-
-  const allSubjectNames = Array.from(processedData.gradesPerSubjectTable.keys()).sort();
-
   // Prepare student history chart data so each period contains values for all mapel (fill missing with null)
   const studentHistoryMapels = studentHistory && studentHistory.data ? Array.from(new Set(studentHistory.data.map(d => d.nama_mapel))) : [];
   const studentHistoryChartData = studentHistory && studentHistory.data ? (() => {
@@ -410,6 +403,13 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
     return [minVal, maxVal];
   }, [studentHistoryChartData, studentHistoryMapels]);
 
+  if (loading) return <LoadingSpinner message="Memuat dashboard wali kelas..." />;
+  if (error) return <StatusMessage type="error" message={error} />;
+  if (classList.length === 0) return <StatusMessage type="info" message="Anda bukan wali kelas untuk tahun ajaran dan semester aktif ini." />;
+  if (!classInfo) return <StatusMessage type="info" message="Silakan pilih kelas atau tunggu data dimuat." />;
+
+  const allSubjectNames = Array.from(processedData.gradesPerSubjectTable.keys()).sort();
+
   // Radar chart data: current semester averages for selected student
   const radarData = selectedStudent ? allSubjectNames.map(subject => ({
     subject,
@@ -438,6 +438,8 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
       return { subject, value };
     });
   })() : [];
+
+  // studentHistory hooks moved above to satisfy react-hooks rules
 
   const totalStudents = processedData.summaryTableData.length; 
   const avgClassGrade = totalStudents > 0 
