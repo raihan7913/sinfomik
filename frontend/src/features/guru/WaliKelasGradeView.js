@@ -386,6 +386,30 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
     });
   })() : [];
 
+  // Compute an adaptive Y-axis domain for the student history chart so small changes are more visible
+  const studentHistoryYDomain = useMemo(() => {
+    const values = (studentHistoryChartData || []).flatMap(d => (
+      studentHistoryMapels.map(m => {
+        const v = d[m];
+        return (v === null || v === undefined || isNaN(v)) ? null : v;
+      }).filter(v => v !== null)
+    ));
+
+    if (!values || values.length === 0) return [0, 100];
+
+    const minVal = Math.max(0, Math.floor(Math.min(...values) - 5));
+    const maxVal = Math.min(100, Math.ceil(Math.max(...values) + 5));
+
+    // If min and max collapse to the same value, expand a bit to make the chart readable.
+    if (minVal >= maxVal) {
+      const adjMin = Math.max(0, minVal - 5);
+      const adjMax = Math.min(100, maxVal + 5);
+      return [adjMin, adjMax];
+    }
+
+    return [minVal, maxVal];
+  }, [studentHistoryChartData, studentHistoryMapels]);
+
   // Radar chart data: current semester averages for selected student
   const radarData = selectedStudent ? allSubjectNames.map(subject => ({
     subject,
@@ -975,7 +999,8 @@ const WaliKelasGradeView = ({ activeTASemester, userId }) => {
                   <LineChart data={studentHistoryChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" angle={-25} textAnchor="end" height={100} interval={0} />
-                    <YAxis domain={[0, 100]} />
+                    {/* Adaptive Y-axis: uses data-driven domain with a small padding so changes are visible */}
+                    <YAxis domain={studentHistoryYDomain} />
                     <Tooltip />
                     <Legend />
                     {studentHistoryMapels.map((mapel, idx) => (
