@@ -252,9 +252,26 @@ const TeacherClassEnroll = ({ activeTASemester }) => {
   const renderGroupedAssignmentsCards = () => {
     const grouped = groupedAssignments();
     
+    // Sort teachers by their lowest class number
+    const sortedGroups = Object.values(grouped).sort((a, b) => {
+      // Extract lowest class number from each teacher's classes
+      const extractLowestClass = (group) => {
+        const classNumbers = group.classes.map(kelas => {
+          const match = kelas.match(/^(\d+)/);
+          return match ? parseInt(match[1]) : 999;
+        });
+        return Math.min(...classNumbers);
+      };
+      
+      const lowestClassA = extractLowestClass(a);
+      const lowestClassB = extractLowestClass(b);
+      
+      return lowestClassA - lowestClassB;
+    });
+    
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Object.values(grouped).map((group, index) => (
+        {sortedGroups.map((group, index) => (
           <div 
             key={group.teacher.id_guru} 
             className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 flex flex-col h-full cursor-pointer"
