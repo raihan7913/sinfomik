@@ -938,15 +938,15 @@ const RekapNilai = ({ activeTASemester, userId }) => {
                               <input type="number" min="1" max="100" value={numQuestions} onChange={e => setNumQuestions(Number(e.target.value))} className="mt-1 w-full px-2 py-1 border rounded" placeholder="Misal: 30" />
                             </div>
                             <div>
-                              <Button onClick={generateGrid} className="w-full">🎯 Generate Grid Soal</Button>
+                              <Button onClick={generateGrid} className="w-full">Generate Grid Soal</Button>
                               <p className="text-xs text-gray-500 mt-1">Atau upload Excel langsung</p>
                             </div>
                             <div>
-                              <Button onClick={runAnalysis} disabled={!questionKeys || questionKeys.length === 0} className="w-full">▶️ Run Analysis</Button>
+                              <Button onClick={runAnalysis} disabled={!questionKeys || questionKeys.length === 0} className="w-full">Run Analysis</Button>
                               <p className="text-xs text-gray-500 mt-1">Pastikan data sudah terisi</p>
                             </div>
                             <div>
-                              <Button variant="secondary" onClick={() => { setQuestionKeys([]); setAnswers({}); setAnalysisStudents([]); }} className="w-full">🗑️ Reset Grid</Button>
+                              <Button variant="secondary" onClick={() => { setQuestionKeys([]); setAnswers({}); setAnalysisStudents([]); }} className="w-full">Reset Grid</Button>
                               <p className="text-xs text-gray-500 mt-1">Hapus semua data grid</p>
                             </div>
                           </div>
@@ -956,12 +956,11 @@ const RekapNilai = ({ activeTASemester, userId }) => {
                           <div>
                             <label className="block text-sm font-medium text-gray-700">Export / Actions</label>
                             <div className="mt-1 flex gap-2 flex-wrap">
-                              <Button onClick={downloadTemplateExcel} disabled={!questionKeys || questionKeys.length === 0}>📥 Download Template Excel</Button>
+                              <Button onClick={downloadTemplateExcel} disabled={!questionKeys || questionKeys.length === 0}>Download Template Excel</Button>
                               <label className="inline-block">
                                 <input type="file" accept=".xlsx,.xls" onChange={handleUploadExcel} className="hidden" id="upload-excel" />
-                                <Button as="span" onClick={() => document.getElementById('upload-excel').click()}>📤 Upload Excel</Button>
+                                <Button as="span" onClick={() => document.getElementById('upload-excel').click()}>Upload Excel</Button>
                               </label>
-                              <Button onClick={exportAnalysisCSV} disabled={!analysisResults || analysisResults.length === 0}>Export CSV</Button>
                               <Button onClick={() => exportCTTAnalysisToExcel({ subjectName, className: classNameExport, questionKeys: questionKeys.length>0 ? questionKeys : [], students: (analysisStudents.length>0 ? analysisStudents : rekapTableData.map(r=>({ id_siswa: r.id_siswa, nama_siswa: r.nama_siswa }))), answers, weights, scale, analysisResults, cronbachAlpha, semValue })} disabled={!analysisResults || analysisResults.length === 0}>Export Excel</Button>
                               <Button variant="secondary" onClick={() => { 
                                 setAnalysisResults([]); 
@@ -969,7 +968,7 @@ const RekapNilai = ({ activeTASemester, userId }) => {
                                 setSemValue(null);
                                 setMessage('Hasil analisis dihapus');
                                 setMessageType('info');
-                              }}>🗑️ Clear Analysis</Button>
+                              }}>Clear Analysis</Button>
                             </div>
                           </div>
                         </div>
