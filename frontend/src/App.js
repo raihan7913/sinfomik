@@ -8,7 +8,7 @@
     import { ToastProvider } from './context/ToastContext';
 
     // ✅ VERSION MANAGEMENT - Update ini setiap deploy baru untuk auto clear cache
-    const APP_VERSION = '2.0.1'; // Format: major.minor.patch
+    const APP_VERSION = '2.0.2'; // Format: major.minor.patch
 
     function App() {
   // State untuk melacak status login pengguna
