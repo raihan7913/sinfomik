@@ -53,10 +53,11 @@ exports.login = (req, res) => {
             }
             
             // Set HTTP-only cookie with token
+            // For Azure cross-domain: use sameSite: 'none' with secure: true
             res.cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production', // Only use secure in production (HTTPS)
-                sameSite: 'strict',
+                secure: true, // MUST be true for sameSite: 'none' to work
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for Azure cross-domain
                 maxAge: 5 * 60 * 60 * 1000 // 5 hours in milliseconds
             });
             
@@ -193,6 +194,15 @@ exports.login = (req, res) => {
                 } else {
                     console.log(`✅ Session initialized for guru: ${user.nama_guru} at timestamp ${issuedAt}`);
                 }
+                
+                // Set HTTP-only cookie with token (same config as admin)
+                res.cookie('token', token, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                    maxAge: 5 * 60 * 60 * 1000
+                });
+                
                 res.status(200).json({
                     success: true,
                     message: 'Login berhasil! (guru)',
@@ -212,10 +222,11 @@ exports.login = (req, res) => {
 // Endpoint untuk logout - clear HTTP-only cookie
 exports.logout = (req, res) => {
     // Clear the HTTP-only cookie by setting it with expired date
+    // MUST match login cookie config for Azure cross-domain
     res.clearCookie('token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Only use secure in production
-        sameSite: 'strict'
+        secure: true,
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     });
     
     res.status(200).json({
